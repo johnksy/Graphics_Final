@@ -31,7 +31,7 @@ GLfloat mat_specular[] = { 0.2, 0.2, 0.2, 1.0 };
  
 int window_1, window_2;
  
-static int view_state = 0, light_state = 0;
+static int view_state = 1, light_state = 0;
  
 int spin;
  
@@ -65,6 +65,8 @@ GLfloat move_x[] = {-4.5, -2.5, -2.5, -1.0, 0.5, 2.0, -2.5, -1.7, -0.9, -0.1, 0.
 GLfloat move_y[] = { 1.5, 1.5, -0.8, -0.8, -0.8, -0.8, -2.5, -2.5, -2.5, -2.5, -2.5, -2.5, -2.5, -2.5, -2.5, -2.5 };
 GLfloat scale[] = {0.6, 0.6, 0.4, 0.4, 0.4, 0.4, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2};
 GLfloat spin_cont = -10;
+GLfloat alpha_cont = 1.0;
+GLfloat alpha_stat = 1.0;
 // Buffer
 GLuint buffer_vertices,buffer_normals,buffer_faces;
 GLuint vBuffer_title[16];
@@ -122,7 +124,15 @@ void draw_cube(){
 	//printf("f size: %d\n", faces.size());
 	*/
 }
+void draw_block() {
+	glBegin(GL_QUADS);
+	glVertex3f(-4.7, -2.3, -8);
+	glVertex3f(-4.7, -1.1, -8);
+	glVertex3f(4.5, -1.1, -8);
+	glVertex3f(4.5, -2.3, -8);
+	glEnd();
 
+}
 
 // I use this to put text on the screen
 void Sprint( int x, int y, char *st)
@@ -195,6 +205,7 @@ void init(void)
 		init_title(i);
 	}
 
+
 }
 
 void init_title(int order) {
@@ -254,8 +265,11 @@ void display_1(void)
 	glColor3f(1.0, 1.0, 1.0);
 
 
-	if (shape == 0) Sprint(-3, -7 ,"Solid Cube");
-	if (shape == 1) Sprint(-3, -7 ,"Solid Cone");
+	if (shape == 0) {
+		Sprint(1, -6, "20121092 Sol-A Kim");
+		Sprint(1, -7, "20131392 Wonjun Yoon");
+	}
+	if (shape == 1) Sprint(-3, -7, "Solid Cone");
 	if (shape == 2) Sprint(-3, -7 ,"Solid Sphere");
 	if (shape == 3) Sprint(-3, -7 ,"Solid Torus");
 	if (shape == 4) Sprint(-3, -7 ,"Solid Dodecahedron");
@@ -292,13 +306,13 @@ void display_1(void)
 		glEnable(GL_LIGHTING); // Turn on lighting
 		glEnable(GL_COLOR_MATERIAL); // Turn on material settings
 		glColorMaterial(GL_FRONT, GL_AMBIENT);
-		glColor4f(0.65, 0.65, 0.65, 0.4);
+		glColor4f(1.0, 0.65, 0.0, 0.4);
 		glColorMaterial(GL_FRONT, GL_EMISSION);
 		glColor4f(0.10, 0.10, 0.10, 0.0);
 		glColorMaterial(GL_FRONT, GL_SPECULAR);
-		glColor4f(0.5, 0.5, 0.5, 0.4);
+		glColor4f(1.0, 1.0, 0.5, 0.4);
 		glColorMaterial(GL_FRONT, GL_DIFFUSE);
-		glColor4f(0.85, 0.85, 0.85, 0.4);
+		glColor4f(1.0, 1.0, 0.0, 0.4);
 		}
  
 	gluLookAt( 0, 0, 20, 0, 0, 0, 0, 1, 0);
@@ -332,7 +346,24 @@ void display_1(void)
 		}
 		for (int i = 2; i <6 ; i++) {
 			title_display(i); //SPOT
-		}/*
+		}
+		glLoadIdentity();
+		glEnable(GL_BLEND);
+
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		
+		glColorMaterial(GL_FRONT, GL_AMBIENT);
+		glColor4f(0.6, 0.1, 1.0, 0.4);
+		glColorMaterial(GL_FRONT, GL_EMISSION);
+		glColor4f(0.10, 0.10, 0.10, 0.0);
+		glColorMaterial(GL_FRONT, GL_SPECULAR);
+		glColor4f(1.0, 0.5, 1.0, 0.4);
+		glColorMaterial(GL_FRONT, GL_DIFFUSE);
+		glColor4f(1.0f, 1.0f, 1.0f, alpha_cont);
+	
+		draw_block();
+		glDisable(GL_BLEND);
+		/*
 		for (int i = 6; i <16; i++) {
 			title_display(i); //DIFFERENCE
 		}*/
@@ -390,14 +421,17 @@ void display_2(void)
 	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);  //Clear the screen
  
 	glMatrixMode (GL_PROJECTION);  // Tell opengl that we are doing project matrix work
-	glLoadIdentity();  // Clear the matrix
+	glLoadIdentity();  // Clear the matrixl
 	glOrtho(-8.0, 8.0, -8.0, 8.0, 0.0, 30.0);  // Setup an Ortho view
 	glMatrixMode(GL_MODELVIEW);  // Tell opengl that we are doing model matrix work. (drawing)
 	glLoadIdentity(); // Clear the model matrix
  
  
 	glColor3f(1.0, 1.0, 1.0);
-	if (shape == 0) Sprint(-3, -7 ,"Wire Cube");
+	if (shape == 0) {
+		Sprint(1, -6, "20121092 Sol-A Kim");
+		Sprint(1, -7, "20131392 Wonjun Yoon");
+	}
 	if (shape == 1) Sprint(-3, -7 ,"Wire Cone");
 	if (shape == 2) Sprint(-3, -7 ,"Wire Sphere");
 	if (shape == 3) Sprint(-3, -7 ,"Wire Torus");
@@ -423,7 +457,7 @@ void display_2(void)
 		Sprint(-2, 4, "Ortho view");
 		}
  
-	glColor3f( 0.0, 0.0, 1.0);  // Cube color
+	glColor3f( 1.0, 0.8, 0.0);  // Cube color
 
 	
 	// Lighting on/off
@@ -436,13 +470,13 @@ void display_2(void)
 		glEnable(GL_LIGHTING); // Turn on lighting
 		glEnable(GL_COLOR_MATERIAL); // Turn on material settings
 		glColorMaterial(GL_FRONT, GL_AMBIENT);
-		glColor4f(0.65, 0.65, 0.65, 0.4);
+		glColor4f(1.0, 0.65, 0.0, 0.4);
 		glColorMaterial(GL_FRONT, GL_EMISSION);
 		glColor4f(0.10, 0.10, 0.10, 0.0);
 		glColorMaterial(GL_FRONT, GL_SPECULAR);
-		glColor4f(0.5, 0.5, 0.5, 0.4);
+		glColor4f(1.0, 1.0, 0.5, 0.4);
 		glColorMaterial(GL_FRONT, GL_DIFFUSE);
-		glColor4f(0.85, 0.85, 0.85, 0.4);
+		glColor4f(1.0, 1.0, 0.0, 0.4);
 		}
  
 	gluLookAt( 0, 0, 20, 0, 0, 0, 0, 1, 0);
@@ -466,9 +500,51 @@ void display_2(void)
 		for (int i = 2; i <6; i++) {
 			title_display(i); //SPOT
 		}
+		//glBlendFunc(GL_SRC_ALPHA, GL_SRC_ALPHA);
 		for (int i = 6; i <16; i++) {
+		 if(i % 2 ==0){
+			 glColorMaterial(GL_FRONT, GL_AMBIENT);
+			 glColor4f(0.6, 0.1, 1.0, 0.4);
+			 glColorMaterial(GL_FRONT, GL_EMISSION);
+			 glColor4f(0.10, 0.10, 0.10, 0.0);
+			 glColorMaterial(GL_FRONT, GL_SPECULAR);
+			 glColor4f(1.0, 0.5, 1.0, 0.4);
+			 glColorMaterial(GL_FRONT, GL_DIFFUSE);
+			 glColor4f(0.6, 0.1, 1.0, 0.4);
+		 }
+		 else {
+			 glColorMaterial(GL_FRONT, GL_AMBIENT);
+			 glColor4f(1.0, 0.65, 0.0, 0.4);
+			 glColorMaterial(GL_FRONT, GL_EMISSION);
+			 glColor4f(0.10, 0.10, 0.10, 0.0);
+			 glColorMaterial(GL_FRONT, GL_SPECULAR);
+			 glColor4f(1.0, 1.0, 0.5, 0.4);
+			 glColorMaterial(GL_FRONT, GL_DIFFUSE);
+			 glColor4f(1.0, 1.0, 0.0, 0.4);
+		 }
 		 title_display(i); //DIFFERENCE
 		}
+		glEnable(GL_BLEND);
+
+		glColorMaterial(GL_FRONT, GL_AMBIENT);
+		glColor4f(0.6, 0.1, 1.0, 0.4);
+		glColorMaterial(GL_FRONT, GL_EMISSION);
+		glColor4f(0.10, 0.10, 0.10, 0.0);
+		glColorMaterial(GL_FRONT, GL_SPECULAR);
+		glColor4f(1.0, 0.5, 1.0, 0.4);
+		glColorMaterial(GL_FRONT, GL_DIFFUSE);
+		glColor4f(0.6, 0.1, 1.0, 0.4);
+		glLoadIdentity();
+
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glColor4f(1.0f, 1.0f, 1.0f, alpha_cont);
+		if (alpha_cont >= 0.55) {
+			alpha_cont = alpha_cont / alpha_stat;
+		}
+		cout << alpha_cont;
+
+		draw_block();
+		glDisable(GL_BLEND);
 	}
 	if (shape == 1) glutWireCone(5,10, 16,16);  // Draw a Cone
 	if (shape == 2) glutWireSphere(5, 16,16 );  // Draw a Sphere
@@ -539,6 +615,9 @@ void keyboard (unsigned char key, int x, int y)
 	  case 's':
 	  case 'S':
 		  shape++;
+		  break;
+	  case '1':
+		  alpha_stat = alpha_stat + 0.01;
 		  break;
  	  case 27:
          exit(0); // exit program when [ESC] key presseed
