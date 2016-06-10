@@ -3,8 +3,8 @@ PROJECT(multi)
 cmake_minimum_required(VERSION 2.8)
 
 # Common include / link directories
-INCLUDE_DIRECTORIES( ${CMAKE_SOURCE_DIR}/freeglut/include/ ${CMAKE_SOURCE_DIR}/glew/inc/ )
-LINK_DIRECTORIES( ${CMAKE_SOURCE_DIR}/freeglut/lib/ ${CMAKE_SOURCE_DIR}/glew/lib/)
+INCLUDE_DIRECTORIES( ${CMAKE_SOURCE_DIR}/freeglut/include/ ${CMAKE_SOURCE_DIR}/glew/inc/ ${CMAKE_SOURCE_DIR}/add_lib/inc/ )
+LINK_DIRECTORIES( ${CMAKE_SOURCE_DIR}/freeglut/lib/ ${CMAKE_SOURCE_DIR}/glew/lib/  ${CMAKE_SOURCE_DIR}/add_lib/inc/)
  
 # collect source files
 FILE( GLOB SRC *.cpp )

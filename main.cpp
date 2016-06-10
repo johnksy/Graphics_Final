@@ -20,7 +20,8 @@
 #include <cfloat>
 #include "glm\glm.hpp"
 #include <vector>
-#include "ObjLoader.h"
+//#include "ObjLoader.h"
+#include "Mesh_viewer.h"
 
 // lighting
 GLfloat LightAmbient[]= { 0.2f, 0.2f, 0.2f, 1.0f };
@@ -40,7 +41,7 @@ int WindowSize = 600;
 /*
 	Parameters
 */
-// Virtual trackball parameters
+  // Virtual trackball parameters
 enum Status{
 	LEFT_DOWN,
 	MIDDLE_DOWN,
@@ -54,9 +55,22 @@ GLfloat m_transform[16];
 float mouse_x = 0, mouse_y = 0, mouse_z = 0, trans_x = 0, trans_y = 0, angle = 0;
 float axis[3];
 float zoom = 0.0;
+
+  // title params
+const char* title[] = { "../Letters/3.off", "../Letters/D.off", "../Letters/S.off", "../Letters/P.off",
+						"../Letters/O.off", "../Letters/T.off", "../Letters/D.off", "../Letters/I.off",
+						"../Letters/F.off", "../Letters/F.off", "../Letters/E.off", "../Letters/R.off",
+						"../Letters/E.off", "../Letters/N.off", "../Letters/C.off", "../Letters/E.off" };
+GLfloat move_x[] = {-4.5, -2.5, -2.5, -1.0, 0.5, 2.0, -2.5, -1.7, -0.9, -0.1, 0.7, 1.5, 2.3, 3.1, 3.9, 4.7};
+GLfloat move_y[] = { 1.5, 1.5, -0.8, -0.8, -0.8, -0.8, -2.5, -2.5, -2.5, -2.5, -2.5, -2.5, -2.5, -2.5, -2.5, -2.5 };
+GLfloat scale[] = {0.6, 0.6, 0.4, 0.4, 0.4, 0.4, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2};
+GLfloat spin_cont = -10;
 // Buffer
 GLuint buffer_vertices,buffer_normals,buffer_faces;
-
+GLuint vBuffer_title[16];
+GLuint nBuffer_title[16];
+GLuint elemBuffer_title[16];
+//GLuint vBuffer_s, nBuffer_s, elemBuffer_s;
 
 // Functions
 void trackball_ptov(int x, int y, float width, float height, float v[3]);
@@ -68,8 +82,17 @@ bool loadOBJ(
 	std::vector<glm::vec2> & out_uvs,
 	std::vector<glm::vec3> & out_normals
 );
+void init_title(int order);
+
 // Objects
-model myLoader;
+//model myLoader;
+Mesh_viewer *mesh_title = new Mesh_viewer[16];
+//Mesh_viewer mesh_s("../Letters/S.off");
+//Mesh_viewer mesh_p("../Letters/P.off");
+//Mesh_viewer mesh_o("../Letters/O.off");
+//Mesh_viewer mesh_t("../Letters/T.off");
+
+
 GLuint* texture;
 //std::vector< glm::vec3 > vertices;
 //std::vector< glm::vec2 > faces;
@@ -164,9 +187,57 @@ void init(void)
 	//glGenBuffers(1, &buffer_faces);
 	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer_faces);
 	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, faces.size()*sizeof(glm::vec2), &faces[0], GL_STATIC_DRAW);
+	
+	//std::cout << mesh_title[1].vSize << " / " << mesh_title[1].iSize<<endl;
+	for (int i = 0; i < 16; i++) {
+		mesh_title[i].init(title[i]);
+		std::cout << mesh_title[i].vSize << " / " << mesh_title[i].iSize << endl;
+		init_title(i);
+	}
+
+}
+
+void init_title(int order) {
+	glGenBuffers(1, &vBuffer_title[order]);
+	glBindBuffer(GL_ARRAY_BUFFER, vBuffer_title[order]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 3 * mesh_title[order].vSize, mesh_title[order].vCoords, GL_STATIC_DRAW);
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glVertexPointer(3, GL_FLOAT, 0, 0);
+
+	glGenBuffers(1, &nBuffer_title[order]);
+	glBindBuffer(GL_ARRAY_BUFFER, nBuffer_title[order]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 3 * mesh_title[order].vSize, mesh_title[order].vsNormal, GL_STATIC_DRAW);
+	glEnableClientState(GL_NORMAL_ARRAY);
+	glNormalPointer(GL_FLOAT, 0, 0);
+
+	glGenBuffers(1, &elemBuffer_title[order]);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elemBuffer_title[order]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * 3 * mesh_title[order].iSize, mesh_title[order].iArray, GL_STATIC_DRAW);
 }
  
- 
+void title_display(int order) {
+	glLoadIdentity();
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glBindBuffer(GL_ARRAY_BUFFER, vBuffer_title[order]);
+	glVertexPointer(3, GL_FLOAT, 0, 0);
+
+	glEnableClientState(GL_NORMAL_ARRAY);
+	glBindBuffer(GL_ARRAY_BUFFER, nBuffer_title[order]);
+	glNormalPointer(GL_FLOAT, 0, 0);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elemBuffer_title[order]);
+	glTranslatef(move_x[order], move_y[order], -10);
+	glRotatef(spin_cont, 0, 1, 0);
+	glRotatef(-10, 0, 0, 1);
+
+	spin_cont = spin_cont += 0.5;
+	glScalef(scale[order], scale[order], scale[order]);
+	glMultMatrixf((GLfloat*)m_transform);
+	glDrawElements(GL_TRIANGLES, 3 * mesh_title[order].iSize, GL_UNSIGNED_INT, 0);
+
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_NORMAL_ARRAY);
+}
 // Draw our world
 void display_1(void)
 {
@@ -254,7 +325,32 @@ void display_1(void)
 	//glRotatef( 45, 1.0, 1.0, 0.0); // rotate cube
 	//glRotatef( spin++, 1.0, 1.0, 1.0); // spin cube
  
-	if (shape == 0) glutSolidCube(10); // Draw a cube
+	if (shape == 0) {
+		//glutSolidCube(10); // Draw a cube
+		for (int i = 0; i < 2; i++) {
+			title_display(i); //3D
+		}
+		for (int i = 2; i <6 ; i++) {
+			title_display(i); //SPOT
+		}/*
+		for (int i = 6; i <16; i++) {
+			title_display(i); //DIFFERENCE
+		}*/
+		/*glLoadIdentity;
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glBindBuffer(GL_ARRAY_BUFFER, vBuffer_title[0]);
+		glVertexPointer(3, GL_FLOAT, 0, 0);
+
+		glEnableClientState(GL_NORMAL_ARRAY);
+		glBindBuffer(GL_ARRAY_BUFFER, nBuffer_title[0]);
+		glNormalPointer(GL_FLOAT, 0, 0);
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elemBuffer_title[0]);
+		glDrawElements(GL_TRIANGLES, 3 * mesh_title[0].iSize, GL_UNSIGNED_INT, 0);
+		glDisableClientState(GL_VERTEX_ARRAY);
+		glDisableClientState(GL_NORMAL_ARRAY);*/
+		
+	}
 	//if (shape == 0) myLoader.draw(); //myLoader.loadBmpTexture("../mesh-data/cube.bmp", texture);
 	if (shape == 1) glutSolidCone(5,10, 16,16);  // Draw a Cone
 	if (shape == 2) glutSolidSphere(5, 16,16 );  // Draw a Sphere
@@ -363,7 +459,17 @@ void display_2(void)
 	//glRotatef( 45, 1.0, 1.0, 0.0); // rotate cube
 	//glRotatef( spin++, 1.0, 1.0, 1.0); // spin cube
  
-	if (shape == 0) glutWireCube(10); // Draw a cube
+	if (shape == 0) {
+		for (int i = 0; i < 2; i++) {
+			title_display(i); //3D
+		}
+		for (int i = 2; i <6; i++) {
+			title_display(i); //SPOT
+		}
+		for (int i = 6; i <16; i++) {
+		 title_display(i); //DIFFERENCE
+		}
+	}
 	if (shape == 1) glutWireCone(5,10, 16,16);  // Draw a Cone
 	if (shape == 2) glutWireSphere(5, 16,16 );  // Draw a Sphere
 	if (shape == 3) glutWireTorus( 2.5, 5, 16, 16);
