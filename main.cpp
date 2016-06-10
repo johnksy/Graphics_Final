@@ -30,7 +30,7 @@ GLfloat mat_specular[] = { 0.2, 0.2, 0.2, 1.0 };
  
 int window_1, window_2;
  
-static int view_state = 0, light_state = 0;
+static int view_state = 1, light_state = 0;
  
 int spin;
  
@@ -56,27 +56,46 @@ float axis[3];
 float zoom = 0.0;
 // Buffer
 GLuint buffer_vertices,buffer_normals,buffer_faces;
+// cub map
+GLuint color_tex;
+int width[6], height[6];
+uchar4 *dst[6];
+
+
 
 
 // Functions
 void trackball_ptov(int x, int y, float width, float height, float v[3]);
 void mouse(int button, int state, int x, int y);
 void motion(int x, int y);
-bool loadOBJ(
-	const char * path, 
-	std::vector<glm::vec3> & out_vertices, 
-	std::vector<glm::vec2> & out_uvs,
-	std::vector<glm::vec3> & out_normals
-);
-// Objects
-model myLoader;
-GLuint* texture;
-//std::vector< glm::vec3 > vertices;
-//std::vector< glm::vec2 > faces;
-//std::vector< glm::vec3 > normals; // Won't be used at the moment.
-//bool res = loadOBJ("../mesh-data/cube.obj", vertices, faces, normals);
+void draw_cube();
 
-void draw_cube(){
+// Objects
+model The_City0, The_City1, The_City2, The_City3;
+
+
+void load_data(){
+	//myLoader.Load("../mesh-data/The_City/The_City.obj", "../mesh-data/The_City/The_City.mtl");
+	//myLoader.Load("../mesh-data/capsule.obj", "../mesh-data/capsule.mtl");
+#define STATIC_CUBEMAP
+#ifdef STATIC_CUBEMAP
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+	LoadBMPFile(&dst[0], &width[0], &height[0], "../sky_box/skybox_back.bmp");
+	LoadBMPFile(&dst[1], &width[1], &height[1], "../sky_box/skybox_left.bmp");
+	LoadBMPFile(&dst[2], &width[2], &height[2], "../sky_box/skybox_bottom.bmp");
+	LoadBMPFile(&dst[3], &width[3], &height[3], "../sky_box/skybox_front.bmp");
+	LoadBMPFile(&dst[4], &width[4], &height[4], "../sky_box/skybox_right.bmp");
+	LoadBMPFile(&dst[5], &width[5], &height[5], "../sky_box/skybox_top.bmp");
+#endif
+	The_City0.Load("../mesh-data/The_City0.obj", "../mesh-data/The_City0.mtl");
+	The_City1.Load("../mesh-data/The_City1.obj", "../mesh-data/The_City1.mtl");
+	The_City2.Load("../mesh-data/The_City2.obj", "../mesh-data/The_City2.mtl");
+	The_City3.Load("../mesh-data/The_City3.obj", "../mesh-data/The_City3.mtl");
+
+	
+}
+void draw_cube_(){
 	glBindBuffer(GL_ARRAY_BUFFER, buffer_vertices);
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glVertexPointer(3,GL_FLOAT,0, 0);
@@ -147,23 +166,17 @@ void init(void)
 	glLightfv(GL_LIGHT1 ,GL_POSITION, LightPosition);
 	glEnable(GL_LIGHTING);  // Turn on lighting
 	glEnable(GL_LIGHT1);    // Turn on light 1
- 
+	
 	glewInit();
+	glGenTextures(1, &color_tex);
+	glBindTexture(GL_TEXTURE_2D, color_tex);
+	
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	
 
-	//myLoader.Load("../mesh-data/apple/Apple.obj", "../mesh-data/apple/Apple.mtl");
-
-	// Generate buffer
-	//glGenBuffers(1, &buffer_vertices);
-	//glBindBuffer(GL_ARRAY_BUFFER, buffer_vertices);
-	//glBufferData(GL_ARRAY_BUFFER, vertices.size()*sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
-
-	//glGenBuffers(1, &buffer_normals);
-	//glBindBuffer(GL_ARRAY_BUFFER, buffer_normals);
-	//glBufferData(GL_ARRAY_BUFFER, normals.size()*sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW);
-
-	//glGenBuffers(1, &buffer_faces);
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer_faces);
-	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, faces.size()*sizeof(glm::vec2), &faces[0], GL_STATIC_DRAW);
 }
  
  
@@ -247,15 +260,40 @@ void display_1(void)
 	if(trans_x != 0||trans_y!=0)
 		glTranslatef(trans_x, trans_y, 0);
 	
+	
 	glMultMatrixf((GLfloat *)m_transform);
-	glPushMatrix();
+	
 	
 
 	//glRotatef( 45, 1.0, 1.0, 0.0); // rotate cube
 	//glRotatef( spin++, 1.0, 1.0, 1.0); // spin cube
  
-	if (shape == 0) glutSolidCube(10); // Draw a cube
-	//if (shape == 0) myLoader.draw(); //myLoader.loadBmpTexture("../mesh-data/cube.bmp", texture);
+	//if (shape == 0) glutSolidCube(10); // Draw a cube
+	//glEnable(GL_TEXTURE_CUBE_MAP);
+	//glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+	//glBindTexture(GL_TEXTURE_CUBE_MAP, cube_tex);
+
+	glEnable(GL_TEXTURE_2D);
+	
+	//glTranslatef(-381.2476/100.0, 435.447510/100.0, -776.047546/100.0);
+	
+	draw_cube();
+	
+	if (shape == 0){
+		glPushMatrix();
+		glScalef(0.01,0.01,0.01);
+		//glTranslatef(-The_City0.midx(), -The_City0.midy(), -The_City0.midz());
+		glTranslatef(-The_City0.midx(), -100, -The_City0.midz());
+		
+		The_City0.draw(); 
+		The_City1.draw(); 
+		The_City2.draw(); 
+		The_City3.draw();
+		
+		
+		glPopMatrix();
+	}
+	
 	if (shape == 1) glutSolidCone(5,10, 16,16);  // Draw a Cone
 	if (shape == 2) glutSolidSphere(5, 16,16 );  // Draw a Sphere
 	if (shape == 3) glutSolidTorus( 2.5, 5, 16, 16);
@@ -283,7 +321,7 @@ void display_1(void)
 	   }
 	if (shape == 8) glutSolidTeapot( 5 );
  
-	glPopMatrix();
+	
 	glutSwapBuffers();
 }
  
@@ -347,6 +385,14 @@ void display_2(void)
 		glColor4f(0.5, 0.5, 0.5, 0.4);
 		glColorMaterial(GL_FRONT, GL_DIFFUSE);
 		glColor4f(0.85, 0.85, 0.85, 0.4);
+		//glColorMaterial(GL_FRONT, GL_AMBIENT);
+		//glColor4f(0,0,0, 0.4);
+		//glColorMaterial(GL_FRONT, GL_EMISSION);
+		//glColor4f(0,0,0, 0.0);
+		//glColorMaterial(GL_FRONT, GL_SPECULAR);
+		//glColor4f(0,0,0, 0.4);
+		//glColorMaterial(GL_FRONT, GL_DIFFUSE);
+		//glColor4f(0.5880, 0.5880, 0.5880,0.4);
 		}
  
 	gluLookAt( 0, 0, 20, 0, 0, 0, 0, 1, 0);
@@ -362,11 +408,21 @@ void display_2(void)
 
 	//glRotatef( 45, 1.0, 1.0, 0.0); // rotate cube
 	//glRotatef( spin++, 1.0, 1.0, 1.0); // spin cube
- 
-	if (shape == 0) glutWireCube(10); // Draw a cube
-	if (shape == 1) glutWireCone(5,10, 16,16);  // Draw a Cone
-	if (shape == 2) glutWireSphere(5, 16,16 );  // Draw a Sphere
-	if (shape == 3) glutWireTorus( 2.5, 5, 16, 16);
+	glEnable(GL_TEXTURE_2D);
+	if (shape == 0){
+		glPushMatrix();
+		
+		//glTranslatef(-The_City0.midx(), -The_City0.midy(), -The_City0.midz());
+		glScalef(0.01,0.01,0.01);
+		The_City0.draw(); 
+		The_City1.draw(); 
+		The_City2.draw(); 
+		The_City3.draw();
+		glPopMatrix();
+	}
+	if (shape == 1) glutSolidCone(5,10, 16,16);  // Draw a Cone
+	if (shape == 2) glutSolidSphere(5, 16,16 );  // Draw a Sphere
+	if (shape == 3) glutSolidTorus( 2.5, 5, 16, 16);
 	if (shape == 4)
 	   {
 		glScalef( 3.5, 3.5, 3.5);
@@ -376,20 +432,20 @@ void display_2(void)
 	if (shape == 5)
 	   {
 		glScalef( 5.0, 5.0, 5.0);
-		glutWireOctahedron();
+		glutSolidOctahedron();
 	   }
 	if (shape == 6)
 	   {
 		glScalef( 5.0, 5.0, 5.0);
-		glutWireTetrahedron();
+		glutSolidTetrahedron();
 	   }
  
 	if (shape == 7)
 	   {
 		glScalef( 5.0, 5.0, 5.0);
-		glutWireIcosahedron();
+		glutSolidIcosahedron();
 	   }
-	if (shape == 8) glutWireTeapot( 5 );
+	if (shape == 8) glutSolidTeapot( 5 );
 	glPopMatrix();
 	glutSwapBuffers();
 }
@@ -455,10 +511,12 @@ int main(int argc, char** argv)
 	glutInitWindowSize (WindowSize, WindowSize);
 	glutInitWindowPosition (10, 10);
 	glutTimerFunc( 10, TimeEvent, 1);
+
 	window_1 = glutCreateWindow (argv[0]);
 	glutSetWindowTitle("GlutWindow 1");
 
 	init ();
+	load_data();
 	glutDisplayFunc(display_1);
 	glutReshapeFunc(reshape_1);
 	glutKeyboardFunc(keyboard);
@@ -559,94 +617,111 @@ void motion(int x, int y){
 	};
 	glutPostRedisplay();
 }
+void draw_cube()
+{
+	//glMatrixMode(GL_MODELVIEW);
+	//glPushMatrix();
+	//glScalef(2277.354980/200.0, 2000/200.0, 2124.265045/200.0);
+	//glTranslatef(-381.2476, 435.447510, -776.047546);
+	glPushMatrix();
+	//glTranslatef(-776.047546/50.0, 0, -381.2476/50.0);
 
-bool loadOBJ(
-	const char * path, 
-	std::vector<glm::vec3> & out_vertices, 
-	std::vector<glm::vec2> & out_uvs,
-	std::vector<glm::vec3> & out_normals
-){
-	printf("Loading OBJ file %s...\n", path);
-
-	std::vector<unsigned int> vertexIndices, uvIndices, normalIndices;
-	std::vector<glm::vec3> temp_vertices; 
-	std::vector<glm::vec2> temp_uvs;
-	std::vector<glm::vec3> temp_normals;
-
-
-	FILE * file = fopen(path, "r");
-	if( file == NULL ){
-		printf("Impossible to open the file !\n");
-		return false;
-	}
-
-	while( 1 ){
-
-		char lineHeader[128];
-		int res = fscanf(file, "%s", lineHeader);
-		if (res == EOF)
-			break;
-
-		if ( strcmp( lineHeader, "v" ) == 0 ){
-			glm::vec3 vertex;
-			fscanf(file, "%f %f %f\n", &vertex.x, &vertex.y, &vertex.z );
-			printf("v %f %f %f\n", &vertex.x, &vertex.y, &vertex.z);
-			temp_vertices.push_back(vertex);
-		}else if ( strcmp( lineHeader, "vt" ) == 0 ){
-			glm::vec2 uv;
-			fscanf(file, "%f %f\n", &uv.x, &uv.y );
-			printf("uv %f %f\n", &uv.x, &uv.y);
-			temp_uvs.push_back(uv);
-		}else if ( strcmp( lineHeader, "vn" ) == 0 ){
-			glm::vec3 normal;
-			fscanf(file, "%f %f %f\n", &normal.x, &normal.y, &normal.z );
-			printf("vn %f %f %f\n", &normal.x, &normal.y, &normal.z);
-			temp_normals.push_back(normal);
-		}else if ( strcmp( lineHeader, "f" ) == 0 ){
-			std::string vertex1, vertex2, vertex3;
-			unsigned int vertexIndex[3], uvIndex[3], normalIndex[3];
-			int matches = fscanf(file, "%d/%d/%d %d/%d/%d %d/%d/%d\n", &vertexIndex[0], &uvIndex[0], &normalIndex[0], &vertexIndex[1], &uvIndex[1], &normalIndex[1], &vertexIndex[2], &uvIndex[2], &normalIndex[2] );
-			printf("f %d/%d/%d %d/%d/%d %d/%d/%d\n", &vertexIndex[0], &uvIndex[0], &normalIndex[0], &vertexIndex[1], &uvIndex[1], &normalIndex[1], &vertexIndex[2], &uvIndex[2], &normalIndex[2] );
-			if (matches != 9){
-				printf("File can't be read by our simple parser :-( Try exporting with other options\n");
-				return false;
-			}
-			vertexIndices.push_back(vertexIndex[0]);
-			vertexIndices.push_back(vertexIndex[1]);
-			vertexIndices.push_back(vertexIndex[2]);
-			uvIndices    .push_back(uvIndex[0]);
-			uvIndices    .push_back(uvIndex[1]);
-			uvIndices    .push_back(uvIndex[2]);
-			normalIndices.push_back(normalIndex[0]);
-			normalIndices.push_back(normalIndex[1]);
-			normalIndices.push_back(normalIndex[2]);
-		}else{
-			// Probably a comment, eat up the rest of the line
-			char stupidBuffer[1000];
-			fgets(stupidBuffer, 1000, file);
-		}
-
-	}
-
-	// For each triangle
-	for( unsigned int v=0; v<vertexIndices.size(); v+=3 ){
-		// For each vertex of the triangle
-		for ( unsigned int i=0; i<3; i+=1 ){
-
-			unsigned int vertexIndex = vertexIndices[v+i];
-			glm::vec3 vertex = temp_vertices[ vertexIndex-1 ];
-			
-			unsigned int uvIndex = uvIndices[v+i];
-			glm::vec2 uv = temp_uvs[ uvIndex-1 ];
-			
-			unsigned int normalIndex = normalIndices[v+i];
-			glm::vec3 normal = temp_normals[ normalIndex-1 ];
-			
-			out_vertices.push_back(vertex);
-			out_uvs     .push_back(uv);
-			out_normals .push_back(normal);
-		}
-	}
-
-	return true;
+	glScalef(2000/100.0, 2000/100.0, 2000/100.0);
+	glTranslatef(-0.5,-0.1,-0.5);
+	//glTranslatef(-381.2476, 435.447510, -776.047546);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glBindTexture(GL_TEXTURE_2D, color_tex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width[0], height[0], 0, GL_RGBA, GL_UNSIGNED_BYTE, dst[0]);
+	glBegin(GL_QUADS);
+		// Back
+		glNormal3f(0,0,-1);
+		glTexCoord2f(0,0);
+		glVertex3f(1,1,0);
+		glTexCoord2f(1,0);
+		glVertex3f(0,1,0);
+		glTexCoord2f(1,1);
+		glVertex3f(0,0,0);
+		glTexCoord2f(0,1);
+		glVertex3f(1,0,0);
+		
+	glEnd();
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glBindTexture(GL_TEXTURE_2D, color_tex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width[1], height[1], 0, GL_RGBA, GL_UNSIGNED_BYTE, dst[1]);
+	glBegin(GL_QUADS);
+		// Left	
+		glNormal3f(-1,0,0);
+		glTexCoord2f(0,0);
+		glVertex3f(0,1,0);
+		glTexCoord2f(1,0);
+		glVertex3f(0,1,1);
+		glTexCoord2f(1,1);
+		glVertex3f(0,0,1);
+		glTexCoord2f(0,1);
+		glVertex3f(0,0,0);
+		
+	glEnd();
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glBindTexture(GL_TEXTURE_2D, color_tex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width[2], height[2], 0, GL_RGBA, GL_UNSIGNED_BYTE, dst[2]);
+	glBegin(GL_QUADS);
+		// Bottom
+		glNormal3f(0,-1,0);
+		glTexCoord2f(0,0);
+		glVertex3f(0,0,1);
+		glTexCoord2f(1,0);
+		glVertex3f(1,0,1);
+		glTexCoord2f(1,1);
+		glVertex3f(1,0,0);
+		glTexCoord2f(0,1);
+		glVertex3f(0,0,0);
+		
+	glEnd();
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glBindTexture(GL_TEXTURE_2D, color_tex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width[3], height[3], 0, GL_RGBA, GL_UNSIGNED_BYTE, dst[3]);
+	glBegin(GL_QUADS);
+		// Front
+		glNormal3f(0,0,1);
+		glTexCoord2f(0,0);
+		glVertex3f(0,1,1);
+		glTexCoord2f(1,0);
+		glVertex3f(1,1,1);
+		glTexCoord2f(1,1);
+		glVertex3f(1,0,1);
+		glTexCoord2f(0,1);
+		glVertex3f(0,0,1);
+	glEnd();
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glBindTexture(GL_TEXTURE_2D, color_tex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width[4], height[4], 0, GL_RGBA, GL_UNSIGNED_BYTE, dst[4]);
+	glBegin(GL_QUADS);
+		// Right
+		glNormal3f(1,0,0);
+		glTexCoord2f(0,0);
+		glVertex3f(1,1,1);
+		glTexCoord2f(1,0);
+		glVertex3f(1,1,0);
+		glTexCoord2f(1,1);
+		glVertex3f(1,0,0);
+		glTexCoord2f(0,1);
+		glVertex3f(1,0,1);
+		
+	glEnd();
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glBindTexture(GL_TEXTURE_2D, color_tex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width[5], height[5], 0, GL_RGBA, GL_UNSIGNED_BYTE, dst[5]);
+	glBegin(GL_QUADS);
+		// Top
+		glNormal3f(0,1,0);
+		glTexCoord2f(0,0);
+		glVertex3f(0,1,0);
+		glTexCoord2f(1,0);
+		glVertex3f(1,1,0);
+		glTexCoord2f(1,1);
+		glVertex3f(1,1,1);
+		glTexCoord2f(0,1);
+		glVertex3f(0,1,1);
+	glEnd();
+	glPopMatrix();
 }

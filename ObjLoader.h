@@ -1,123 +1,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include <gl/GLAUX.H>
-#pragma comment( lib, "glaux.lib" ) 
+//#include <gl/GLAUX.H>
+#include <cfloat>
+#include "bmploader.cpp"
+//#pragma comment( lib, "glaux.lib" ) 
 
 #define Debug(x){MessageBox(NULL, x, "Debug:", MB_OK);}
 
-
-// Define targa header.
-#pragma pack(1)
-typedef struct
-{
-	GLbyte	identsize;              // Size of ID field that follows header (0)
-	GLbyte	colorMapType;           // 0 = None, 1 = paletted
-	GLbyte	imageType;              // 0 = none, 1 = indexed, 2 = rgb, 3 = grey, +8=rle
-	unsigned short	colorMapStart;          // First colour map entry
-	unsigned short	colorMapLength;         // Number of colors
-	unsigned char 	colorMapBits;   // bits per palette entry
-	unsigned short	xstart;                 // image x origin
-	unsigned short	ystart;                 // image y origin
-	unsigned short	width;                  // width in pixels
-	unsigned short	height;                 // height in pixels
-	GLbyte	bits;                   // bits per pixel (8 16, 24, 32)
-	GLbyte	descriptor;             // image descriptor
-} TGAHEADER;
-#pragma pack(8)
-
-
-
-////////////////////////////////////////////////////////////////////
-// Allocate memory and load targa bits. Returns pointer to new buffer,
-// height, and width of texture, and the OpenGL format of data.
-// Call free() on buffer when finished!
-// This only works on pretty vanilla targas... 8, 24, or 32 bit color
-// only, no palettes, no RLE encoding.
-GLbyte *gltLoadTGA(const char *szFileName, GLint *iWidth, GLint *iHeight, GLint *iComponents, GLenum *eFormat)
-{
-	FILE *pFile;			// File pointer
-	TGAHEADER tgaHeader;		// TGA file header
-	unsigned long lImageSize;		// Size in bytes of image
-	short sDepth;			// Pixel depth;
-	GLbyte	*pBits = NULL;          // Pointer to bits
-
-	// Default/Failed values
-	*iWidth = 0;
-	*iHeight = 0;
-	*eFormat = GL_BGR_EXT;
-	*iComponents = GL_RGB8;
-
-	// Attempt to open the fil
-	pFile = fopen(szFileName, "rb");
-	if(pFile == NULL)
-		return NULL;
-
-	// Read in header (binary)
-	fread(&tgaHeader, 18/* sizeof(TGAHEADER)*/, 1, pFile);
-
-	// Do byte swap for big vs little endian
-#ifdef __APPLE__
-	BYTE_SWAP(tgaHeader.colorMapStart);
-	BYTE_SWAP(tgaHeader.colorMapLength);
-	BYTE_SWAP(tgaHeader.xstart);
-	BYTE_SWAP(tgaHeader.ystart);
-	BYTE_SWAP(tgaHeader.width);
-	BYTE_SWAP(tgaHeader.height);
-#endif
-
-
-	// Get width, height, and depth of texture
-	*iWidth = tgaHeader.width;
-	*iHeight = tgaHeader.height;
-	sDepth = tgaHeader.bits / 8;
-
-	// Put some validity checks here. Very simply, I only understand
-	// or care about 8, 24, or 32 bit targa's.
-	if(tgaHeader.bits != 8 && tgaHeader.bits != 24 && tgaHeader.bits != 32)
-		return NULL;
-
-	// Calculate size of image buffer
-	lImageSize = tgaHeader.width * tgaHeader.height * sDepth;
-
-	// Allocate memory and check for success
-	pBits = ( GLbyte* )malloc(lImageSize * sizeof(GLbyte));
-	if(pBits == NULL)
-		return NULL;
-
-	// Read in the bits
-	// Check for read error. This should catch RLE or other 
-	// weird formats that I don't want to recognize
-	if(fread(pBits, lImageSize, 1, pFile) != 1)
-	{
-		free(pBits);
-		return NULL;
-	}
-
-	// Set OpenGL format expected
-	switch(sDepth)
-	{
-	case 3:     // Most likely case
-		*eFormat = GL_BGR_EXT;
-		*iComponents = GL_RGB8;
-		break;
-	case 4:
-		*eFormat = GL_BGRA_EXT;
-		*iComponents = GL_RGBA8;
-		break;
-	case 1:
-		*eFormat = GL_LUMINANCE;
-		*iComponents = GL_LUMINANCE8;
-		break;
-	};
-
-
-	// Done with File
-	fclose(pFile);
-
-	// Return pointer to image data
-	return pBits;
-}
 
 struct vertex
 {
@@ -137,6 +27,7 @@ struct face
 	float u[3], v[3];			//text coords
 	float a[3], b[3], c[3];		//normals
 };
+
 
 struct material
 {	
@@ -160,6 +51,9 @@ private:
 	char mtllib[256];
 	char filename[256];
 	char directory[256];
+	float min_v[3];
+	float max_v[3]; 
+	float mid[3];
 	unsigned int vindex;
 	unsigned int tindex;
 	unsigned int nindex;
@@ -185,7 +79,7 @@ private:
 		mnode * mat;
 		fnode * next;
 	};
-
+	
 	vnode * vfirst;
 	vnode * vcurrent;
 	tnode * tfirst;
@@ -205,27 +99,14 @@ private:
 	bool loadMaterialLib(FILE *);
 	void loadMaterials(FILE *);
 	void loadBmpTexture(char* fileName, GLuint* texture);
-	void loadTGAtexture(char* fileName, GLuint* texture);
 	void useMaterial(FILE *);
 
-	AUX_RGBImageRec *LoadBMPFile(char *filename)
-	{
-		FILE *hFile = NULL;
-
-		if(!filename) return NULL;
-
-		hFile = fopen(filename, "r");
-
-		if(hFile) {
-			fclose(hFile);
-			return auxDIBImageLoad(filename);
-		}
-
-		return NULL;
-	}
+	int width, height;
+	uchar4 *dst;
+	int shape;	//triangle
 
 public:
-	bool Load(char * objfile, char * mtlname);
+	bool Load(char * objfile, char * mtlname, int n);
 	model()
 	{
 		vfirst=vcurrent= NULL;
@@ -238,60 +119,28 @@ public:
 	void draw();
 	float Y(float, float){return 0.0;}
 	bool Collide(float, float, float,float, float, float){return false;}
+	float midx(){return mid[0];};
+	float midy(){return mid[1];};
+	float midz(){return mid[2];};
 };
-
-void model::loadTGAtexture(char* fileName, GLuint* texture)
-{
-	GLint iWidth, iHeight, iComponents;
-	GLenum eFormat;
-	GLbyte *pBytes = NULL;
-
-	glGenTextures(1, texture);
-
-	glBindTexture(GL_TEXTURE_2D, *texture);
-
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-	pBytes = gltLoadTGA(fileName, &iWidth, &iHeight, &iComponents, &eFormat);
-	gluBuild2DMipmaps(GL_TEXTURE_2D, iComponents, iWidth, iHeight, eFormat, GL_UNSIGNED_BYTE, pBytes);
-	free(pBytes);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, 0x812F);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, 0x812F);
-
-	//glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-}
 
 void model::loadBmpTexture(char* fileName, GLuint* texture )
 {
-	AUX_RGBImageRec* texRec;
+	
+	LoadBMPFile( &dst, &width, &height, fileName ) ;
+		
+	glGenTextures(1, texture);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glBindTexture(GL_TEXTURE_2D, *texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, dst);
 
-	if( ( texRec = LoadBMPFile( fileName ) ) )	{
-			glGenTextures(1, texture);
-			glBindTexture(GL_TEXTURE_2D, *texture);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexImage2D(GL_TEXTURE_2D, 
-					0, 
-					3, 
-					texRec->sizeX, 
-					texRec->sizeY, 
-					0, 
-					GL_RGB, 
-					GL_UNSIGNED_BYTE, 
-					texRec->data);
-	} 
-
-	if(texRec)
-	{
-		if(texRec->data) free(texRec->data);
-		free(texRec);
-	}
 }
 
-bool model::Load(char * objfile, char * mtlname)
+bool model::Load(char * objfile, char * mtlname, int n = 3)
 {
+	shape = n;
 	char buffer[256];
 	strcpy(filename, objfile);
 	FILE * file = fopen(filename, "r");
@@ -303,29 +152,30 @@ bool model::Load(char * objfile, char * mtlname)
 		MessageBox(NULL, objfile, "Model file not found:", MB_OK);
 		return false;
 	}
-	int count = 0;
+	//int count = 0;
+	min_v[0] = min_v[1] = min_v[2] = FLT_MAX;
+	max_v[0] = max_v[1] = max_v[2] = -FLT_MAX;
 	while(fscanf(file, "%s", buffer) != EOF)
 	{
-		
+		//printf("%s ",buffer);
 		if(!strcmp("#", buffer))skipComment(file);
 		if(!strcmp("mtllib", buffer))loadMaterialLib(file);
 		if(!strcmp("v", buffer))loadVertex(file);
-		
 		if(!strcmp("vt", buffer))loadTexCoord(file);
-		
 		if(!strcmp("vn", buffer))loadNormal(file);
-		
 		if(!strcmp("f", buffer))loadFace(file);
-		
 		if(!strcmp("s", buffer))fscanf(file, "%s", buffer); 
-		
 		if(!strcmp("usemtl", buffer))useMaterial(file);
-		count++;
-		printf("%d\n",count);
+		//count++;
+		//printf(" %d\n",count);
 		
 		
 	}
-	
+
+	for(int i=0; i<3; i++)
+		mid[i] = (min_v[i]+max_v[i])/2;
+	printf("diff:	%f, %f, %f\n",max_v[0] - min_v[0],max_v[1]-min_v[1],max_v[2]-min_v[2]);
+	printf("mid:	%f, %f, %f\n", mid[0],mid[1],mid[2]);
 	fclose(file);
 	loaded = true;
 	return true;
@@ -336,10 +186,11 @@ void model::useMaterial(FILE * file)
 	char buffer[256];
 	mnode * cursor = mfirst;
 	fscanf(file, "%s", buffer);
-	
-	while(strcmp(buffer, cursor->data.name))
+	printf("%s ",buffer);
+	while(strcmp(buffer, cursor->data.name)){
 		cursor= cursor->next;
-	
+	}
+	printf(" %s", cursor->data.name);
 	mcurrent = cursor;
 	
 }
@@ -359,7 +210,9 @@ bool model::loadMaterialLib(FILE * file)
 	sprintf(mtllib, "%s/%s", wd, buffer);
 	strcpy(directory, wd);
 	*/
+
 	FILE * lib = fopen(mtllib, "r");
+	//printf("mtl: %s", mtllib);
 	if(lib == NULL)
 	{
 		MessageBox(NULL, mtllib, "Material library not found:", MB_OK);
@@ -389,10 +242,12 @@ void model::loadMaterials(FILE * file)
 		{
 			fscanf(file, "%s", temp->data.map_Kd);
 
-			if(strstr(temp->data.map_Kd, ".bmp") != NULL)
+			if(strstr(temp->data.map_Kd, ".bmp") != NULL){
 				loadBmpTexture( temp->data.map_Kd, & (temp->data.texture ) );
-			else if( strstr( temp->data.map_Kd, ".tga" ) != NULL )
-				loadTGAtexture( temp->data.map_Kd, & (temp->data.texture ) );
+			}
+			else
+				assert("Texture format should be .bmp!");
+
 		}
 		if(!strcmp("Ni", parameter))
 			fscanf(file, "%f", &temp->data.Ni);
@@ -425,6 +280,14 @@ bool model::loadVertex(FILE * file)
 {
 	vnode * temp = new vnode();
 	fscanf(file, "%f %f %f", &temp->data.x, &temp->data.y, &temp->data.z);
+	if(temp->data.x < min_v[0]){min_v[0] = temp->data.x;}
+	if(temp->data.y < min_v[1]){min_v[1] = temp->data.y;}
+	if(temp->data.z < min_v[2]){min_v[2] = temp->data.z;}
+	if(temp->data.x > max_v[0]){max_v[0] = temp->data.x;}
+	if(temp->data.y > max_v[1]){max_v[1] = temp->data.y;}
+	if(temp->data.z > max_v[2]){max_v[2] = temp->data.z;}
+
+	//printf("%f %f %f", temp->data.x, temp->data.y, temp->data.z);
 	temp->data.index = vindex;
 	if(vfirst == NULL)
 	{
@@ -446,6 +309,7 @@ bool model::loadTexCoord(FILE * file)
 {
 	tnode * temp = new tnode();
 	fscanf(file, "%f %f", &temp->data.u, &temp->data.v);
+	//printf("%f %f", temp->data.u, temp->data.v);
 	temp->data.index = tindex;
 	temp->next = NULL;
 	if(tfirst == NULL)
@@ -466,6 +330,7 @@ bool model::loadNormal(FILE * file)
 {
 	vnode * temp = new vnode();
 	fscanf(file, "%f %f %f", &temp->data.x, &temp->data.y, &temp->data.z);
+	//printf("%f %f %f", temp->data.x, temp->data.y, temp->data.z);
 	temp->data.index = nindex;
 	temp->next = NULL;
 	if(nfirst == NULL)
@@ -489,14 +354,17 @@ bool model::loadFace(FILE * file)
 	vnode * vcursor = vfirst;
 	tnode * tcursor = tfirst;
 	vnode * ncursor = nfirst;
-	unsigned int v_index[3], t_index[3], n_index[3];
-	for(int i = 0; i < 3; i++)
+	unsigned int *v_index, *t_index, *n_index;
+	v_index = new unsigned int[shape];
+	t_index = new unsigned int[shape];
+	n_index = new unsigned int[shape];
+	for(int i = 0; i < shape; i++)
 	{
 		vcursor = vfirst;
 		tcursor = tfirst;
 		ncursor = nfirst;
 		fscanf(file, "%i/%i/%i", &v_index[i], &t_index[i], &n_index[i]);
-
+		//printf("%i/%i/%i ", v_index[i], t_index[i], n_index[i]);
 		for(int v = 1; v != v_index[i]; v++)
 			vcursor = vcursor->next;
 		temp->data.x[i] = vcursor->data.x;
@@ -514,6 +382,7 @@ bool model::loadFace(FILE * file)
 		temp->data.b[i] = ncursor->data.y;
 		temp->data.c[i] = ncursor->data.z;
 	}
+	//printf("\n");
 
 	temp->next = NULL;
 	if(ffirst == NULL)
@@ -538,29 +407,27 @@ void model::draw()
 	if(loaded)
 	{
 		fnode * fcursor = ffirst;
-		if( ffirst->mat->data.texture != NULL)
+		if( ffirst->mat->data.texture != NULL){
+			glBindTexture(GL_TEXTURE_2D, 0);
 			glBindTexture(GL_TEXTURE_2D, ffirst->mat->data.texture);
+		}
 		int nCnt = 0;
-		//glBegin(GL_TRIANGLES);
-		glBegin(GL_QUADS);
+
+		glBegin(GL_TRIANGLES);
 		while(fcursor != NULL)
 		{
 
 			glBindTexture(GL_TEXTURE_2D, fcursor->mat->data.texture );
 			nCnt++;
-			//glColor3f(1.0f, 1.0f, 1.0f);
+			
+			glColor3f(1.0f, 1.0f, 1.0f);
 
-			glTexCoord2f(fcursor->data.u[0], fcursor->data.v[0]);
-			glNormal3f(fcursor->data.a[0], fcursor->data.b[0], fcursor->data.c[0]);
-			glVertex3f(fcursor->data.x[0], fcursor->data.y[0], fcursor->data.z[0]);
+			for(int j=0; j<shape; j++){
+				glTexCoord2f(fcursor->data.u[j], fcursor->data.v[j]);
+				glNormal3f(fcursor->data.a[j], fcursor->data.b[j], fcursor->data.c[j]);
+				glVertex3f(fcursor->data.x[j], fcursor->data.y[j], fcursor->data.z[j]);
+			}
 
-			glTexCoord2f(fcursor->data.u[1], fcursor->data.v[1]);
-			glNormal3f(fcursor->data.a[1], fcursor->data.b[1], fcursor->data.c[1]);
-			glVertex3f(fcursor->data.x[1], fcursor->data.y[1], fcursor->data.z[1]);
-
-			glTexCoord2f(fcursor->data.u[2], fcursor->data.v[2]);
-			glNormal3f(fcursor->data.a[2], fcursor->data.b[2], fcursor->data.c[2]);
-			glVertex3f(fcursor->data.x[2], fcursor->data.y[2], fcursor->data.z[2]);
 			fcursor = fcursor->next;
 			
 		}
