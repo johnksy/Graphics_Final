@@ -73,7 +73,7 @@ GLfloat translation = 0.0;
 GLfloat theta = 0, phi = 0;
 GLfloat eyeX = 0.0, eyeY = 0.0, eyeZ = 20.0;
 GLfloat objX = 0.0, objY = 0.0, objZ = 0.0;
-
+GLfloat length_move = 0.0;
 /*
 	Parameters
 */
@@ -499,8 +499,8 @@ void display_1(void)
 	if (mode == 1){
 		glLoadIdentity();
 		//glDisable(GL_LIGHTING);
-		gluLookAt(eyeX, eyeY, eyeZ, objX, objY, objZ, 0, 1, 0);
-		glTranslatef(translation*sin(theta), 0.0, 9.5+ translation*cos(theta));
+		gluLookAt(eyeX, eyeY, eyeZ-9.5, objX, objY, objZ, 0, 1, 0);
+		//glTranslatef(translation*sin(theta), 0.0, 9.5+ translation*cos(theta));
 		//glRotatef(rotation,0,1,0);
 
 		glColorMaterial(GL_FRONT, GL_AMBIENT);
@@ -681,6 +681,7 @@ void display_2(void)
  
 	if (mode == 0) {
 		for (int i = 0; i < 2; i++) {
+			//glUseProgram(p[0]);
 			title_display(i); //3D
 		}
 		for (int i = 2; i <6; i++) {
@@ -734,8 +735,8 @@ void display_2(void)
 	//if (shape == 1) glutWireCone(5,10, 16,16);  // Draw a Cone
 	if (mode == 1){
 		glLoadIdentity();
-		gluLookAt(eyeX, eyeY, eyeZ, objX, objY, objZ, 0, 1, 0);
-		glTranslatef(translation*sin(theta), 0.0, 9.5 + translation*cos(theta));
+		gluLookAt(eyeX, eyeY, eyeZ - 9.5, objX, objY, objZ, 0, 1, 0);
+
 		//glRotatef(90, 0, 1, 0);
 		glColorMaterial(GL_FRONT, GL_AMBIENT);
 		glColor4f(1.0, 1.0, 1.0, 0.0);
@@ -846,28 +847,43 @@ void keyboard (unsigned char key, int x, int y)
 		  break;
 	  case 'w':
 	  case 'W':
-		  translation = translation + 0.05;
+		  translation =  + 0.05;
+		  eyeX = eyeX - translation*sin(theta);
+		  eyeZ = eyeZ - translation*cos(theta);
+		  objX = objX - translation*sin(theta);
+		  objZ = objZ - translation*cos(theta);
+		  cout << "EYE" << eyeX << " " << eyeZ << endl;
+		  cout << "OBJ" << objX << " " << objZ << endl;
 		  break;
 	  case 's':
 	  case 'S':
-		  translation = translation - 0.05;
+		  translation =  - 0.05;
+		  eyeX = eyeX - translation*sin(theta);
+		  eyeZ = eyeZ - translation*cos(theta);
+		  objX = objX - translation*sin(theta);
+		  objZ = objZ - translation*cos(theta);
+		  cout << "EYE" << eyeX << " " << eyeZ << endl;
+		  cout << "OBJ" << objX << " " << objZ << endl;
 		  break;
 	  case 'a':
 	  case 'A':
 		  theta += 0.03;
-		  eyeX = objX + 0.000001*cos(phi)*sin(theta);
-		  eyeY = objY + 0.000001*sin(phi)*sin(theta);
-		  eyeZ = objZ + 0.000001*cos(theta);
-		  cout << "LEFT";
+		  length_move = sqrt((objX - eyeX)*(objX - eyeX) + (objZ - eyeZ)*(objZ - eyeZ));
+		  objX = 20*sin(theta);
+		  objZ = 20*cos(theta);
+		  cout << "LENGHT" << length_move << endl;
+		  cout << "EYE" << eyeX << " " << eyeZ << endl;
+		  cout << "OBJ" << objX << " " << objZ << endl;
 		  break;
 	  case 'd':
 	  case 'D':
 		  theta -= 0.03;
-		  eyeX = objX + 0.000001*cos(phi)*sin(theta);
-		  eyeY = objY + 0.000001*sin(phi)*sin(theta);
-		  eyeZ = objZ + 0.000001*cos(theta);
-		  cout << "RIGHT";
-
+		  length_move = sqrt((objX - eyeX)*(objX - eyeX) + (objZ - eyeZ)*(objZ - eyeZ));
+		  objX = 20*sin(theta);
+		  objZ = 20*cos(theta);
+		  cout << "LENGHT" << length_move << endl;
+		  cout << "EYE" << eyeX << " " << eyeZ << endl;
+		  cout << "OBJ" << objX << " " << objZ << endl;
 		  break;
       default:
          break;
@@ -938,7 +954,8 @@ int main(int argc, char** argv)
 	glutKeyboardFunc(keyboard);
 	glutMouseFunc(mouse);
 	glutMotionFunc(motion);
- 
+	//p[0] = createGLSLProgram("../phong.vert", NULL, "../phong.frag");
+
 	window_2 = glutCreateWindow (argv[0]);
 	glutSetWindowTitle("GlutWindow 2");
 	init ();
