@@ -107,7 +107,13 @@ GLfloat scale[] = {0.6, 0.6, 0.4, 0.4, 0.4, 0.4, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0
 GLfloat spin_cont = -10;
 GLfloat alpha_cont = 1.0;
 GLfloat alpha_stat = 1.0;
-
+// setting objects
+bool fix = false;
+int savepoint = 0;
+int toggle = 0;
+GLfloat m_transform_save1[16];
+GLfloat points_x[] = {13.96, -15.45, -9.5, 14.82, -8.4};
+GLfloat points_z[] = {9.55, 6.36, 8.67, -9.61, -28.96};
   //GLSL params
 GLuint p[2];
 GLuint CurrProg;
@@ -132,7 +138,8 @@ void mouse(int button, int state, int x, int y);
 void motion(int x, int y);
 void inverseMatrix4x4(const float m[16], float invOut[16]);
 void draw_cube();
-
+void draw_objects();
+void draw_objects2();
 // Objects
 model The_City0, The_City1, The_City2, The_City3;
 
@@ -142,7 +149,10 @@ model Box;
 model Gorilla;
 
 model The_City0_2, The_City1_2, The_City2_2, The_City3_2;
-
+model cat_2;
+model The_Dog_2;
+model Box_2;
+model Gorilla_2;
 
 
 void load_data(){
@@ -169,7 +179,18 @@ void load_data(){
 	Box.Load("../mesh-data/Mr_Handy_Box/Mr_Handy_Box.obj", "../mesh-data/Mr_Handy_Box/Mr_Handy_Box.mtl");
 	Gorilla.Load("../mesh-data/Gorilla/Gorilla.obj", "../mesh-data/Gorilla/Gorilla.mtl");
 }
+void load_data2(){
 
+	The_City0_2.Load("../mesh-data/The_City0.obj", "../mesh-data/The_City0.mtl");
+	The_City1_2.Load("../mesh-data/The_City1.obj", "../mesh-data/The_City1.mtl");
+	The_City2_2.Load("../mesh-data/The_City2.obj", "../mesh-data/The_City2.mtl");
+	The_City3_2.Load("../mesh-data/The_City3.obj", "../mesh-data/The_City3.mtl");
+	cat_2.Load("../mesh-data/cat.obj", "../mesh-data/cat.mtl");
+
+	The_Dog_2.Load("../mesh-data/The_Dog/The_Dog.obj", "../mesh-data/The_Dog/The_Dog.mtl");
+	Box_2.Load("../mesh-data/Mr_Handy_Box/Mr_Handy_Box.obj", "../mesh-data/Mr_Handy_Box/Mr_Handy_Box.mtl");
+	Gorilla_2.Load("../mesh-data/Gorilla/Gorilla.obj", "../mesh-data/Gorilla/Gorilla.mtl");
+}
 
 void init_title(int order);
 
@@ -367,10 +388,10 @@ void display_1(void)
 		Sprint(1, -6, "20121092 Sol-A Kim");
 		Sprint(1, -7, "20131392 Wonjun Yoon");
 	}
-	if (mode == 1) Sprint(-3, -7, "Solid Cone");
-	if (mode == 2) Sprint(-3, -7 ,"Solid Sphere");
-	if (mode == 3) Sprint(-3, -7 ,"Solid Torus");
-	if (mode == 4) Sprint(-3, -7 ,"Solid Dodecahedron");
+	if (mode == 1) Sprint(-3, -7, "Move Cat");
+	if (mode == 2) Sprint(-3, -7 ,"Move Dog");
+	if (mode == 3) Sprint(-3, -7 ,"Move Box");
+	if (mode == 4) Sprint(-3, -7 ,"Move Gorilla");
 	if (mode == 5) Sprint(-3, -7 ,"Solid Octahedron");
 	if (mode == 6) Sprint(-3, -7 ,"Solid Tetrahedron");
 	if (mode == 7) Sprint(-3, -7 ,"Solid Icosahedron");
@@ -496,9 +517,11 @@ void display_1(void)
 		
 	}
 	//if (shape == 0) myLoader.draw(); //myLoader.loadBmpTexture("../mesh-data/cube.bmp", texture);
-	if (mode == 1){
+	if (mode != 0){
+		//draw_objects();
 		glLoadIdentity();
 		//glDisable(GL_LIGHTING);
+		//gluLookAt(0,10,0, 0,0,0, 0,0,-1);
 		gluLookAt(eyeX, eyeY, eyeZ, objX, objY, objZ, 0, 1, 0);
 		glTranslatef(translation*sin(theta), 0.0, 9.5+ translation*cos(theta));
 		//glRotatef(rotation,0,1,0);
@@ -515,29 +538,7 @@ void display_1(void)
 
 		draw_cube();
 
-		glPushMatrix();
-		glScalef(0.2,0.2,0.2);
-		glTranslatef(0,-3,0);
-		cat.draw();
-		glPopMatrix();
-
-		glPushMatrix();
-		glScalef(0.2,0.2,0.2);
-		glTranslatef(2,-3,0);
-		The_Dog.draw();
-		glPopMatrix();
-
-		glPushMatrix();
-		glScalef(0.1,0.1,0.1);
-		glTranslatef(4,-6,1);
-		Box.draw();
-		glPopMatrix();
-
-		glPushMatrix();
-		glScalef(0.2,0.2,0.2);
-		glTranslatef(-2,-3,1);
-		Gorilla.draw();
-		glPopMatrix();
+		draw_objects();
 
 		glPushMatrix();
 		glScalef(0.01,0.01,0.01);
@@ -555,30 +556,6 @@ void display_1(void)
 	
 	//if (shape == 1) glutSolidCone(5,10, 16,16);  // Draw a Cone
 
-	if (mode == 2) glutSolidSphere(5, 16,16 );  // Draw a Sphere
-	if (mode == 3) glutSolidTorus( 2.5, 5, 16, 16);
-	if (mode == 4)
-	   {
-			Box.draw();
-	   }
- 
-	if (mode == 5)
-	   {
-		   Gorilla.draw();
-
-	   }
-	if (mode == 6)
-	   {
-		glScalef( 5.0, 5.0, 5.0);
-		glutSolidTetrahedron();
-	   }
- 
-	if (mode == 7)
-	   {
-		glScalef( 5.0, 5.0, 5.0);
-		glutSolidIcosahedron();
-	   }
-	if (mode == 8) glutSolidTeapot( 5 );
  
 	
 	glutSwapBuffers();
@@ -602,10 +579,10 @@ void display_2(void)
 		Sprint(1, -6, "20121092 Sol-A Kim");
 		Sprint(1, -7, "20131392 Wonjun Yoon");
 	}
-	if (mode == 1) Sprint(-3, -7 ,"Wire Cone");
-	if (mode == 2) Sprint(-3, -7 ,"Wire Sphere");
-	if (mode == 3) Sprint(-3, -7 ,"Wire Torus");
-	if (mode == 4) Sprint(-3, -7 ,"Wire Dodecahedron");
+	if (mode == 1) Sprint(-3, -7, "Move Cat");
+	if (mode == 2) Sprint(-3, -7 ,"Move Dog");
+	if (mode == 3) Sprint(-3, -7 ,"Move Box");
+	if (mode == 4) Sprint(-3, -7 ,"Move Gorilla");
 	if (mode == 5) Sprint(-3, -7 ,"Wire Octahedron");
 	if (mode == 6) Sprint(-3, -7 ,"Wire Tetrahedron");
 	if (mode == 7) Sprint(-3, -7 ,"Wire Icosahedron");
@@ -675,9 +652,6 @@ void display_2(void)
 	//glRotatef( 45, 1.0, 1.0, 0.0); // rotate cube
 	//glRotatef( spin++, 1.0, 1.0, 1.0); // spin cube
 
-	
-	
-
  
 	if (mode == 0) {
 		for (int i = 0; i < 2; i++) {
@@ -732,10 +706,24 @@ void display_2(void)
 		glDisable(GL_BLEND);
 	}
 	//if (shape == 1) glutWireCone(5,10, 16,16);  // Draw a Cone
-	if (mode == 1){
+	if (mode != 0){
+		/*
+		if(fix && toggle == 1){
+			glGetFloatv(GL_MODELVIEW_MATRIX, (GLfloat*) m_transform_save1);
+			draw_objects2();
+			toggle = 0;
+		}
+		else if(fix && toggle == 0){
+			glLoadIdentity();
+			glMultMatrixf((GLfloat*)m_transform_save1);
+			draw_objects2();
+		}
+		else{}
+		*/
 		glLoadIdentity();
-		gluLookAt(eyeX, eyeY, eyeZ, objX, objY, objZ, 0, 1, 0);
-		glTranslatef(translation*sin(theta), 0.0, 9.5 + translation*cos(theta));
+		gluLookAt(0,10,0, 0,0,0, 0,0,-1);
+		//gluLookAt(eyeX, eyeY, eyeZ, objX, objY, objZ, 0, 1, 0);
+		//glTranslatef(translation*sin(theta), 0.0, 9.5 + translation*cos(theta));
 		//glRotatef(90, 0, 1, 0);
 		glColorMaterial(GL_FRONT, GL_AMBIENT);
 		glColor4f(1.0, 1.0, 1.0, 0.0);
@@ -747,6 +735,8 @@ void display_2(void)
 		glColor4f(1.0f, 1.0f, 1.0f, 0.0);
 		glEnable(GL_TEXTURE_2D);
 		draw_cube();
+		draw_objects2();
+
 		glPushMatrix();
 		glScalef(0.01, 0.01, 0.01);
 
@@ -760,32 +750,32 @@ void display_2(void)
 		glPopMatrix();
 	}
 
-	if (mode == 2) glutWireSphere(5, 16,16 );  // Draw a Sphere
-	if (mode == 3) glutWireTorus( 2.5, 5, 16, 16);
+	//if (mode == 2) glutWireSphere(5, 16,16 );  // Draw a Sphere
+	//if (mode == 3) glutWireTorus( 2.5, 5, 16, 16);
 
-	if (mode == 4)
-	   {
-		glScalef( 3.5, 3.5, 3.5);
-		glutSolidDodecahedron();
-	   }
- 
-	if (mode == 5)
-	   {
-		glScalef( 5.0, 5.0, 5.0);
-		glutSolidOctahedron();
-	   }
-	if (mode == 6)
-	   {
-		glScalef( 5.0, 5.0, 5.0);
-		glutSolidTetrahedron();
-	   }
- 
-	if (mode == 7)
-	   {
-		glScalef( 5.0, 5.0, 5.0);
-		glutSolidIcosahedron();
-	   }
-	if (mode == 8) glutSolidTeapot( 5 );
+	//if (mode == 4)
+	//   {
+	//	glScalef( 3.5, 3.5, 3.5);
+	//	glutSolidDodecahedron();
+	//   }
+ //
+	//if (mode == 5)
+	//   {
+	//	glScalef( 5.0, 5.0, 5.0);
+	//	glutSolidOctahedron();
+	//   }
+	//if (mode == 6)
+	//   {
+	//	glScalef( 5.0, 5.0, 5.0);
+	//	glutSolidTetrahedron();
+	//   }
+ //
+	//if (mode == 7)
+	//   {
+	//	glScalef( 5.0, 5.0, 5.0);
+	//	glutSolidIcosahedron();
+	//   }
+	//if (mode == 8) glutSolidTeapot( 5 );
 	glPopMatrix();
 	glutSwapBuffers();
 }
@@ -819,61 +809,72 @@ void reshape_2 (int w, int h)
 // Read the keyboard
 void keyboard (unsigned char key, int x, int y)
 {
-   switch (key)
-   {
- 
-	  case 'v':
-	  case 'V':
-		  view_state = abs(view_state -1);
-		  break;
-	  case 'l':
-	  case 'L':
-		  light_state = abs(light_state -1);
-		  break;
-	  case 'm':
-	  case 'M':
-		  mode++;
-		  break;
-	  case '1':
-		  alpha_stat = alpha_stat + 0.01;
-		  break;
- 	  case 27:
-         exit(0); // exit program when [ESC] key presseed
-         break;
-	  case 'q':
-	  case 'Q':
-		  rotation = rotation - 180;
-		  break;
-	  case 'w':
-	  case 'W':
-		  translation = translation + 0.05;
-		  break;
-	  case 's':
-	  case 'S':
-		  translation = translation - 0.05;
-		  break;
-	  case 'a':
-	  case 'A':
-		  theta += 0.03;
-		  eyeX = objX + 0.000001*cos(phi)*sin(theta);
-		  eyeY = objY + 0.000001*sin(phi)*sin(theta);
-		  eyeZ = objZ + 0.000001*cos(theta);
-		  cout << "LEFT";
-		  break;
-	  case 'd':
-	  case 'D':
-		  theta -= 0.03;
-		  eyeX = objX + 0.000001*cos(phi)*sin(theta);
-		  eyeY = objY + 0.000001*sin(phi)*sin(theta);
-		  eyeZ = objZ + 0.000001*cos(theta);
-		  cout << "RIGHT";
+	switch (key)
+	{
+		
+		case 'v':
+		case 'V':
+			view_state = abs(view_state -1);
+			break;
+		case 'l':
+		case 'L':
+			light_state = abs(light_state -1);
+			break;
+		case 'm':
+		case 'M':
+			mode++;
+			break;
+		case '1':
+			alpha_stat = alpha_stat + 0.01;
+			break;
+ 		case 27:
+			exit(0); // exit program when [ESC] key presseed
+			break;
+		case 'q':
+		case 'Q':
+			rotation = rotation - 180;
+			break;
+		case 'w':
+		case 'W':
+			translation = translation + 0.05;
+			break;
+		case 's':
+		case 'S':
+			translation = translation - 0.05;
+			break;
+		case 'a':
+		case 'A':
+			theta += 0.03;
+			eyeX = objX + 0.00000001*cos(phi)*sin(theta);
+			eyeY = objY + 0.00000001*sin(phi)*sin(theta);
+			eyeZ = objZ + 0.00000001*cos(theta);
+			cout << "LEFT";
+			break;
+		case 'd':
+		case 'D':
+			theta -= 0.03;
+			eyeX = objX + 0.00000001*cos(phi)*sin(theta);
+			eyeY = objY + 0.00000001*sin(phi)*sin(theta);
+			eyeZ = objZ + 0.00000001*cos(theta);
+			cout << "RIGHT";
 
-		  break;
-      default:
-         break;
-   }
-   glutPostRedisplay();
-   if (mode > 8) mode = 0;
+			break;
+		case 'f':
+			if(!fix){
+				fix = true;
+				toggle = 1;
+				savepoint++;
+			}
+			else{
+				fix = false;
+				savepoint--;
+			}
+		
+		default:
+			break;
+	}
+	glutPostRedisplay();
+	if (mode > 8) mode = 0;
  
 }
 void getUniformLoc() {
@@ -942,10 +943,7 @@ int main(int argc, char** argv)
 	window_2 = glutCreateWindow (argv[0]);
 	glutSetWindowTitle("GlutWindow 2");
 	init ();
-	The_City0_2.Load("../mesh-data/The_City0.obj", "../mesh-data/The_City0.mtl");
-	The_City1_2.Load("../mesh-data/The_City1.obj", "../mesh-data/The_City1.mtl");
-	The_City2_2.Load("../mesh-data/The_City2.obj", "../mesh-data/The_City2.mtl");
-	The_City3_2.Load("../mesh-data/The_City3.obj", "../mesh-data/The_City3.mtl");
+	load_data2();
 	glutDisplayFunc(display_2);
 	glutReshapeFunc(reshape_2);
 	//p = createGLSLProgram("../phong.vert", NULL, "../phong.frag");
@@ -1271,4 +1269,108 @@ void draw_cube()
 		glVertex3f(0,1,1);
 	glEnd();
 	glPopMatrix();
+}
+void draw_objects(){
+
+		glutSolidSphere(0.01, 16,16 );
+		glPushMatrix();
+		glScalef(0.2,0.2,0.2);
+		glTranslatef(0,-3,0);
+		glTranslatef(points_x[0], 0, -points_z[0]);
+		if(mode == 1){
+			printf("trans: %f %f\n",trans_x, trans_y);
+			if(trans_x != 0||trans_y!=0)
+				glTranslatef(trans_x, 0, -trans_y);
+		}
+		cat.draw();
+		glPopMatrix();
+
+		glPushMatrix();
+		glScalef(0.2,0.2,0.2);
+		glTranslatef(2,-3,0);
+		glTranslatef(points_x[1], 0, -points_z[1]);
+		if(mode == 2){
+			printf("trans: %f %f\n",trans_x, trans_y);
+			if(trans_x != 0||trans_y!=0)
+				glTranslatef(trans_x, 0, -trans_y);
+		}
+		The_Dog.draw();
+		glPopMatrix();
+
+		glPushMatrix();
+		glScalef(0.1,0.1,0.1);
+		glTranslatef(4,-6,1);
+		glTranslatef(points_x[2], 0, -points_z[2]);
+		if(mode == 3){
+			printf("trans: %f %f\n",trans_x, trans_y);
+			if(trans_x != 0||trans_y!=0)
+				glTranslatef(trans_x, 0, -trans_y);
+		}
+		Box.draw();
+		glPopMatrix();
+
+		glPushMatrix();
+		glScalef(0.2,0.2,0.2);
+		glTranslatef(-2,-3,1);
+		glTranslatef(points_x[3], 0, -points_z[3]);
+		if(mode == 4){
+			printf("trans: %f %f\n",trans_x, trans_y);
+			if(trans_x != 0||trans_y!=0)
+				glTranslatef(trans_x, 0, -trans_y);
+		}
+		//glTranslatef(points_x[3], 0, -points_z[3]);
+		Gorilla.draw();
+		glPopMatrix();
+
+
+}
+void draw_objects2(){
+
+		glutSolidSphere(0.01, 16,16 );
+		glPushMatrix();
+		glScalef(0.2,0.2,0.2);
+		glTranslatef(0,-3,0);
+		glTranslatef(points_x[0], 0, -points_z[0]);
+		if(mode == 1){
+			if(trans_x != 0||trans_y!=0)
+				glTranslatef(trans_x, 0, -trans_y);
+		}
+		cat.draw();
+		glPopMatrix();
+
+		glPushMatrix();
+		glScalef(0.2,0.2,0.2);
+		glTranslatef(2,-3,0);
+		glTranslatef(points_x[1], 0, -points_z[1]);
+		if(mode == 2){
+			if(trans_x != 0||trans_y!=0)
+				glTranslatef(trans_x, 0, -trans_y);
+		}
+		The_Dog.draw();
+		glPopMatrix();
+
+		glPushMatrix();
+		glScalef(0.1,0.1,0.1);
+		glTranslatef(4,-6,1);
+		glTranslatef(points_x[2], 0, -points_z[2]);
+		if(mode == 3){
+			if(trans_x != 0||trans_y!=0)
+				glTranslatef(trans_x, 0, -trans_y);
+		}
+		Box.draw();
+		glPopMatrix();
+
+		glPushMatrix();
+		glScalef(0.2,0.2,0.2);
+		glTranslatef(-2,-3,1);
+		glTranslatef(points_x[3], 0, -points_z[3]);
+		if(mode == 4){
+			if(trans_x != 0||trans_y!=0)
+				glTranslatef(trans_x, 0, -trans_y);
+		}
+		//glTranslatef(points_x[3], 0, -points_z[3]);
+		Gorilla.draw();
+		glPopMatrix();
+
+
 }
