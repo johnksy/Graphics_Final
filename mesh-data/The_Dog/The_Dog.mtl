@@ -1,0 +1,99 @@
+# 
+# 
+
+newmtl DogBody
+Ns 10.0000
+Ni 1.5000
+d 1.0000
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000 
+illum 1
+Ka 0.0000 0.0000 0.0000
+Kd 0.5880 0.5880 0.5880
+Ks 0.0000 0.0000 0.0000
+Ke 0.0000 0.0000 0.0000
+map_Kd ../mesh-data/The_Dog/Dog_Body_D.bmp
+
+
+newmtl DogBodyFur
+Ns 10.0000
+Ni 1.5000
+d 1.0000
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000 
+illum 1
+Ka 0.0000 0.0000 0.0000
+Kd 0.5880 0.5880 0.5880
+Ks 0.0000 0.0000 0.0000
+Ke 0.0000 0.0000 0.0000
+map_Kd ../mesh-data/The_Dog/Dog_Body_D.bmp
+
+
+newmtl DogBodyFur_Dog_Body
+Ns 10.0000
+Ni 1.5000
+d 1.0000
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000 
+illum 1
+Ka 0.0000 0.0000 0.0000
+Kd 0.5880 0.5880 0.5880
+Ks 0.0000 0.0000 0.0000
+Ke 0.0000 0.0000 0.0000
+map_Kd ../mesh-data/The_Dog/Dog_Body_D.bmp
+
+
+newmtl DogEyes
+Ns 10.0000
+Ni 1.5000
+d 1.0000
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000 
+illum 1
+Ka 0.0000 0.0000 0.0000
+Kd 0.5880 0.5880 0.5880
+Ks 0.0000 0.0000 0.0000
+Ke 0.0000 0.0000 0.0000
+map_Kd ../mesh-data/The_Dog/Dog_Eyes_D.bmp
+
+
+newmtl DogHead
+Ns 10.0000
+Ni 1.5000
+d 1.0000
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000 
+illum 1
+Ka 0.0000 0.0000 0.0000
+Kd 0.5880 0.5880 0.5880
+Ks 0.0000 0.0000 0.0000
+Ke 0.0000 0.0000 0.0000
+map_Kd ../mesh-data/The_Dog/Dog_Head_D.bmp
+
+newmtl DogHeadFur
+Ns 10.0000
+Ni 1.5000
+d 1.0000
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000 
+illum 1
+Ka 0.0000 0.0000 0.0000
+Kd 0.5880 0.5880 0.5880
+Ks 0.0000 0.0000 0.0000
+Ke 0.0000 0.0000 0.0000
+map_Kd ../mesh-data/The_Dog/Dog_Head_D.bmp
+
+
+newmtl DogHeadFur_Dog_Head
+Ns 10.0000
+Ni 1.5000
+d 1.0000
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000 
+illum 1
+Ka 0.0000 0.0000 0.0000
+Kd 0.5880 0.5880 0.5880
+Ks 0.0000 0.0000 0.0000
+Ke 0.0000 0.0000 0.0000
+map_Kd ../mesh-data/The_Dog/Dog_Head_D.bmp
+

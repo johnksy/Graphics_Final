@@ -91,8 +91,10 @@ void draw_cube();
 
 // Objects
 model The_City0, The_City1, The_City2, The_City3;
-
-
+model cat;
+model The_Dog;
+model Box;
+model Gorilla;
 void load_data(){
 	//myLoader.Load("../mesh-data/The_City/The_City.obj", "../mesh-data/The_City/The_City.mtl");
 	//myLoader.Load("../mesh-data/capsule.obj", "../mesh-data/capsule.mtl");
@@ -111,8 +113,11 @@ void load_data(){
 	The_City1.Load("../mesh-data/The_City1.obj", "../mesh-data/The_City1.mtl");
 	The_City2.Load("../mesh-data/The_City2.obj", "../mesh-data/The_City2.mtl");
 	The_City3.Load("../mesh-data/The_City3.obj", "../mesh-data/The_City3.mtl");
+	cat.Load("../mesh-data/cat.obj", "../mesh-data/cat.mtl");
 
-	
+	The_Dog.Load("../mesh-data/The_Dog/The_Dog.obj", "../mesh-data/The_Dog/The_Dog.mtl");
+	Box.Load("../mesh-data/Mr_Handy_Box/Mr_Handy_Box.obj", "../mesh-data/Mr_Handy_Box/Mr_Handy_Box.mtl");
+	Gorilla.Load("../mesh-data/Gorilla/Gorilla.obj", "../mesh-data/Gorilla/Gorilla.mtl");
 }
 
 
@@ -444,6 +449,31 @@ void display_1(void)
 	if (shape == 1){
 		glEnable(GL_TEXTURE_2D);
 		draw_cube();
+
+		glPushMatrix();
+		glScalef(0.2,0.2,0.2);
+		glTranslatef(0,-3,0);
+		cat.draw();
+		glPopMatrix();
+
+		glPushMatrix();
+		glScalef(0.2,0.2,0.2);
+		glTranslatef(2,-3,0);
+		The_Dog.draw();
+		glPopMatrix();
+
+		glPushMatrix();
+		glScalef(0.1,0.1,0.1);
+		glTranslatef(4,-6,1);
+		Box.draw();
+		glPopMatrix();
+
+		glPushMatrix();
+		glScalef(0.2,0.2,0.2);
+		glTranslatef(-2,-3,1);
+		Gorilla.draw();
+		glPopMatrix();
+
 		glPushMatrix();
 		glScalef(0.01,0.01,0.01);
 		//glTranslatef(-The_City0.midx(), -The_City0.midy(), -The_City0.midz());
@@ -459,18 +489,17 @@ void display_1(void)
 	}
 	
 	//if (shape == 1) glutSolidCone(5,10, 16,16);  // Draw a Cone
-	if (shape == 2) glutSolidSphere(5, 16,16 );  // Draw a Sphere
-	if (shape == 3) glutSolidTorus( 2.5, 5, 16, 16);
+	if (shape == 2) cat.draw();  // Draw a Sphere
+	if (shape == 3) The_Dog.draw();
 	if (shape == 4)
 	   {
-		glScalef( 3.5, 3.5, 3.5);
-		glutSolidDodecahedron();
+			Box.draw();
 	   }
  
 	if (shape == 5)
 	   {
-		glScalef( 5.0, 5.0, 5.0);
-		glutSolidOctahedron();
+		   Gorilla.draw();
+
 	   }
 	if (shape == 6)
 	   {

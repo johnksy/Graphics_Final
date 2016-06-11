@@ -174,6 +174,7 @@ bool model::Load(char * objfile, char * mtlname, int n = 3)
 
 	for(int i=0; i<3; i++)
 		mid[i] = (min_v[i]+max_v[i])/2;
+
 	printf("diff:	%f, %f, %f\n",max_v[0] - min_v[0],max_v[1]-min_v[1],max_v[2]-min_v[2]);
 	printf("mid:	%f, %f, %f\n", mid[0],mid[1],mid[2]);
 	fclose(file);
