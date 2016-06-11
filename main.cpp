@@ -22,6 +22,7 @@
 #include <vector>
 #include "ObjLoader.h"
 #include "Mesh_viewer.h"
+#include "textfile.cpp"
 
 // lighting
 GLfloat LightAmbient[]= { 0.2f, 0.2f, 0.2f, 1.0f };
@@ -29,15 +30,50 @@ GLfloat LightDiffuse[]= { 0.5f, 0.5f, 0.5f, 1.0f };
 GLfloat LightPosition[]= { 5.0f, 5.0f, -10.0f, 1.0f };
 GLfloat mat_specular[] = { 0.2, 0.2, 0.2, 1.0 };
  
+float lpos[4] = { 1,0.5,1,0 };
+
+// light color
+
+const float FrontMaterialDiffuse[4] = { 0.55f, 0.55f, 0.55f, 1 };
+const float FrontMaterialAmbient[4] = { 0.1f, 0.1f, 0.1f, 1 };
+const float FrontMaterialSpecular[4] = { 0.4f, 0.4f, 0.4f, 1 };
+const float LightSourceDiffuse[4] = { 1.0, 0, 0, 1 };
+const float LightSourceAmbient[4] = { 0.1f, 0.1f, 0.1f, 1 };
+const float LightSourceSpecular[4] = { 1.0f, 1.0f, 1.0f, 1 };
+
+const GLfloat LightModelDiffuse[4] = { 1.0, 0, 0, 1 };
+const GLfloat LightModelAmbient[4] = { 0.5, 0.5, 0.5, 1 };
+const GLfloat LightModelSpecular[4] = { 1.0, 1.0, 1.0, 1 };
+
+// value location in the shader
+GLint loc_projection, loc_model, loc_view, loc_normalmat;
+GLint loc_k, loc_alpha;
+GLint loc_LightSourcePosition;
+GLint loc_LightSourceDiffuse, loc_LightSourceAmbient, loc_LightSourceSpecular;
+GLint loc_LightModelDiffuse, loc_LightModelAmbient, loc_LightModelSpecular;
+GLint loc_FrontMaterialDiffuse, loc_FrontMaterialAmbient, loc_FrontMaterialSpecular;
+
+// coefficient parameters
+vec3 k;
+float alpha = 4.0;
+int range = 4;
+float thickness = 0.001;
+
 int window_1, window_2;
  
 static int view_state = 1, light_state = 0;
  
 int spin;
  
-int shape;
+int mode;
 
 int WindowSize = 600;
+GLfloat rotation = 0.0;
+GLfloat translation = 0.0;
+GLfloat theta = 0, phi = 0;
+GLfloat eyeX = 0.0, eyeY = 0.0, eyeZ = 20.0;
+GLfloat objX = 0.0, objY = 0.0, objZ = 0.0;
+
 /*
 	Parameters
 */
@@ -51,6 +87,10 @@ enum Status{
 
 enum Status S;
 GLfloat m_transform[16];
+GLfloat m_view[16];
+GLfloat m_modelview[16];
+GLfloat m_projection[16];
+GLfloat m_normal[16];
 
 float mouse_x = 0, mouse_y = 0, mouse_z = 0, trans_x = 0, trans_y = 0, angle = 0;
 float axis[3];
@@ -62,11 +102,15 @@ const char* title[] = { "../Letters/3.off", "../Letters/D.off", "../Letters/S.of
 						"../Letters/F.off", "../Letters/F.off", "../Letters/E.off", "../Letters/R.off",
 						"../Letters/E.off", "../Letters/N.off", "../Letters/C.off", "../Letters/E.off" };
 GLfloat move_x[] = {-4.5, -2.5, -2.5, -1.0, 0.5, 2.0, -2.5, -1.7, -0.9, -0.1, 0.7, 1.5, 2.3, 3.1, 3.9, 4.7};
-GLfloat move_y[] = { 1.5, 1.5, -0.8, -0.8, -0.8, -0.8, -2.5, -2.5, -2.5, -2.5, -2.5, -2.5, -2.5, -2.5, -2.5, -2.5 };
+GLfloat move_y[] = { 1.5, 1.5, -0.8, -0.8, -0.8, -0.8, -3.0, -3.0, -3.0, -3.0, -3.0, -3.0, -3.0, -3.0, -3.0, -3.0 };
 GLfloat scale[] = {0.6, 0.6, 0.4, 0.4, 0.4, 0.4, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2};
 GLfloat spin_cont = -10;
 GLfloat alpha_cont = 1.0;
 GLfloat alpha_stat = 1.0;
+
+  //GLSL params
+GLuint p[2];
+GLuint CurrProg;
 // Buffer
 GLuint buffer_vertices,buffer_normals,buffer_faces;
 
@@ -86,11 +130,12 @@ GLuint elemBuffer_title[16];
 void trackball_ptov(int x, int y, float width, float height, float v[3]);
 void mouse(int button, int state, int x, int y);
 void motion(int x, int y);
-
+void inverseMatrix4x4(const float m[16], float invOut[16]);
 void draw_cube();
 
 // Objects
 model The_City0, The_City1, The_City2, The_City3;
+model The_City0_2, The_City1_2, The_City2_2, The_City3_2;
 
 
 void load_data(){
@@ -159,10 +204,10 @@ void draw_cube_(){
 }
 void draw_block() {
 	glBegin(GL_QUADS);
-	glVertex3f(-4.7, -2.3, -8);
-	glVertex3f(-4.7, -1.1, -8);
-	glVertex3f(4.5, -1.1, -8);
-	glVertex3f(4.5, -2.3, -8);
+	glVertex3f(-4.7, -2.7, -8);
+	glVertex3f(-4.7, -1.5, -8);
+	glVertex3f(4.5, -1.5, -8);
+	glVertex3f(4.5, -2.7, -8);
 	glEnd();
 
 }
@@ -308,18 +353,18 @@ void display_1(void)
 	glColor3f(1.0, 1.0, 1.0);
 
 
-	if (shape == 0) {
+	if (mode == 0) {
 		Sprint(1, -6, "20121092 Sol-A Kim");
 		Sprint(1, -7, "20131392 Wonjun Yoon");
 	}
-	if (shape == 1) Sprint(-3, -7, "Solid Cone");
-	if (shape == 2) Sprint(-3, -7 ,"Solid Sphere");
-	if (shape == 3) Sprint(-3, -7 ,"Solid Torus");
-	if (shape == 4) Sprint(-3, -7 ,"Solid Dodecahedron");
-	if (shape == 5) Sprint(-3, -7 ,"Solid Octahedron");
-	if (shape == 6) Sprint(-3, -7 ,"Solid Tetrahedron");
-	if (shape == 7) Sprint(-3, -7 ,"Solid Icosahedron");
-	if (shape == 8) Sprint(-3, -7 ,"Solid Teapot");
+	if (mode == 1) Sprint(-3, -7, "Solid Cone");
+	if (mode == 2) Sprint(-3, -7 ,"Solid Sphere");
+	if (mode == 3) Sprint(-3, -7 ,"Solid Torus");
+	if (mode == 4) Sprint(-3, -7 ,"Solid Dodecahedron");
+	if (mode == 5) Sprint(-3, -7 ,"Solid Octahedron");
+	if (mode == 6) Sprint(-3, -7 ,"Solid Tetrahedron");
+	if (mode == 7) Sprint(-3, -7 ,"Solid Icosahedron");
+	if (mode == 8) Sprint(-3, -7 ,"Solid Teapot");
  
 	// Setup view, and print view state on screen
 	if (view_state == 1)
@@ -397,7 +442,7 @@ void display_1(void)
 	
 
 
-	if (shape == 0) {
+	if (mode == 0) {
 		//glutSolidCube(10); // Draw a cube
 		for (int i = 0; i < 2; i++) {
 			title_display(i); //3D
@@ -441,8 +486,23 @@ void display_1(void)
 		
 	}
 	//if (shape == 0) myLoader.draw(); //myLoader.loadBmpTexture("../mesh-data/cube.bmp", texture);
-	if (shape == 1){
+	if (mode == 1){
+		glLoadIdentity();
+		//glDisable(GL_LIGHTING);
+		gluLookAt(eyeX, eyeY, eyeZ, objX, objY, objZ, 0, 1, 0);
+		glTranslatef(translation*sin(theta), 0.0, 9.5+ translation*cos(theta));
+		//glRotatef(rotation,0,1,0);
+
+		glColorMaterial(GL_FRONT, GL_AMBIENT);
+		glColor4f(1.0, 1.0, 1.0, 0.0);
+		glColorMaterial(GL_FRONT, GL_EMISSION);
+		glColor4f(1.0, 1.0, 1.0, 0.0);
+		glColorMaterial(GL_FRONT, GL_SPECULAR);
+		glColor4f(1.0, 1.0, 1.0, 0.0);
+		glColorMaterial(GL_FRONT, GL_DIFFUSE);
+		glColor4f(1.0f, 1.0f, 1.0f, 0.0);
 		glEnable(GL_TEXTURE_2D);
+
 		draw_cube();
 		glPushMatrix();
 		glScalef(0.01,0.01,0.01);
@@ -459,31 +519,31 @@ void display_1(void)
 	}
 	
 	//if (shape == 1) glutSolidCone(5,10, 16,16);  // Draw a Cone
-	if (shape == 2) glutSolidSphere(5, 16,16 );  // Draw a Sphere
-	if (shape == 3) glutSolidTorus( 2.5, 5, 16, 16);
-	if (shape == 4)
+	if (mode == 2) glutSolidSphere(5, 16,16 );  // Draw a Sphere
+	if (mode == 3) glutSolidTorus( 2.5, 5, 16, 16);
+	if (mode == 4)
 	   {
 		glScalef( 3.5, 3.5, 3.5);
 		glutSolidDodecahedron();
 	   }
  
-	if (shape == 5)
+	if (mode == 5)
 	   {
 		glScalef( 5.0, 5.0, 5.0);
 		glutSolidOctahedron();
 	   }
-	if (shape == 6)
+	if (mode == 6)
 	   {
 		glScalef( 5.0, 5.0, 5.0);
 		glutSolidTetrahedron();
 	   }
  
-	if (shape == 7)
+	if (mode == 7)
 	   {
 		glScalef( 5.0, 5.0, 5.0);
 		glutSolidIcosahedron();
 	   }
-	if (shape == 8) glutSolidTeapot( 5 );
+	if (mode == 8) glutSolidTeapot( 5 );
  
 	
 	glutSwapBuffers();
@@ -503,18 +563,18 @@ void display_2(void)
  
  
 	glColor3f(1.0, 1.0, 1.0);
-	if (shape == 0) {
+	if (mode == 0) {
 		Sprint(1, -6, "20121092 Sol-A Kim");
 		Sprint(1, -7, "20131392 Wonjun Yoon");
 	}
-	if (shape == 1) Sprint(-3, -7 ,"Wire Cone");
-	if (shape == 2) Sprint(-3, -7 ,"Wire Sphere");
-	if (shape == 3) Sprint(-3, -7 ,"Wire Torus");
-	if (shape == 4) Sprint(-3, -7 ,"Wire Dodecahedron");
-	if (shape == 5) Sprint(-3, -7 ,"Wire Octahedron");
-	if (shape == 6) Sprint(-3, -7 ,"Wire Tetrahedron");
-	if (shape == 7) Sprint(-3, -7 ,"Wire Icosahedron");
-	if (shape == 8) Sprint(-3, -7 ,"Wire Teapot");
+	if (mode == 1) Sprint(-3, -7 ,"Wire Cone");
+	if (mode == 2) Sprint(-3, -7 ,"Wire Sphere");
+	if (mode == 3) Sprint(-3, -7 ,"Wire Torus");
+	if (mode == 4) Sprint(-3, -7 ,"Wire Dodecahedron");
+	if (mode == 5) Sprint(-3, -7 ,"Wire Octahedron");
+	if (mode == 6) Sprint(-3, -7 ,"Wire Tetrahedron");
+	if (mode == 7) Sprint(-3, -7 ,"Wire Icosahedron");
+	if (mode == 8) Sprint(-3, -7 ,"Wire Teapot");
  
 	// Setup view, and print view state on screen
 	if (view_state == 1)
@@ -584,7 +644,7 @@ void display_2(void)
 	
 
  
-	if (shape == 0) {
+	if (mode == 0) {
 		for (int i = 0; i < 2; i++) {
 			title_display(i); //3D
 		}
@@ -632,52 +692,65 @@ void display_2(void)
 		if (alpha_cont >= 0.55) {
 			alpha_cont = alpha_cont / alpha_stat;
 		}
-		cout << alpha_cont;
 
 		draw_block();
 		glDisable(GL_BLEND);
 	}
 	//if (shape == 1) glutWireCone(5,10, 16,16);  // Draw a Cone
-	if (shape == 1){
+	if (mode == 1){
+		glLoadIdentity();
+		gluLookAt(eyeX, eyeY, eyeZ, objX, objY, objZ, 0, 1, 0);
+		glTranslatef(translation*sin(theta), 0.0, 9.5 + translation*cos(theta));
+		//glRotatef(90, 0, 1, 0);
+		glColorMaterial(GL_FRONT, GL_AMBIENT);
+		glColor4f(1.0, 1.0, 1.0, 0.0);
+		glColorMaterial(GL_FRONT, GL_EMISSION);
+		glColor4f(1.0, 1.0, 1.0, 0.0);
+		glColorMaterial(GL_FRONT, GL_SPECULAR);
+		glColor4f(1.0, 1.0, 1.0, 0.0);
+		glColorMaterial(GL_FRONT, GL_DIFFUSE);
+		glColor4f(1.0f, 1.0f, 1.0f, 0.0);
 		glEnable(GL_TEXTURE_2D);
 		draw_cube();
 		glPushMatrix();
-		
+		glScalef(0.01, 0.01, 0.01);
+
 		//glTranslatef(-The_City0.midx(), -The_City0.midy(), -The_City0.midz());
-		glScalef(0.01,0.01,0.01);
-		The_City0.draw(); 
-		The_City1.draw(); 
-		The_City2.draw(); 
-		The_City3.draw();
+		glTranslatef(-The_City0_2.midx(), -100, -The_City0_2.midz());
+
+		The_City0_2.draw(); 
+		The_City1_2.draw(); 
+		The_City2_2.draw(); 
+		The_City3_2.draw();
 		glPopMatrix();
 	}
 
-	if (shape == 2) glutWireSphere(5, 16,16 );  // Draw a Sphere
-	if (shape == 3) glutWireTorus( 2.5, 5, 16, 16);
+	if (mode == 2) glutWireSphere(5, 16,16 );  // Draw a Sphere
+	if (mode == 3) glutWireTorus( 2.5, 5, 16, 16);
 
-	if (shape == 4)
+	if (mode == 4)
 	   {
 		glScalef( 3.5, 3.5, 3.5);
 		glutSolidDodecahedron();
 	   }
  
-	if (shape == 5)
+	if (mode == 5)
 	   {
 		glScalef( 5.0, 5.0, 5.0);
 		glutSolidOctahedron();
 	   }
-	if (shape == 6)
+	if (mode == 6)
 	   {
 		glScalef( 5.0, 5.0, 5.0);
 		glutSolidTetrahedron();
 	   }
  
-	if (shape == 7)
+	if (mode == 7)
 	   {
 		glScalef( 5.0, 5.0, 5.0);
 		glutSolidIcosahedron();
 	   }
-	if (shape == 8) glutSolidTeapot( 5 );
+	if (mode == 8) glutSolidTeapot( 5 );
 	glPopMatrix();
 	glutSwapBuffers();
 }
@@ -692,6 +765,9 @@ void reshape_1 (int w, int h)
    glLoadIdentity ();
    
    glGetFloatv(GL_MODELVIEW_MATRIX, (GLfloat*) m_transform);
+   k[0] = 0.8;
+   k[1] = 0.1;
+   k[2] = 0.5;
 
 }
  
@@ -702,6 +778,7 @@ void reshape_2 (int w, int h)
    glMatrixMode (GL_MODELVIEW);
    glLoadIdentity ();
    //gluLookAt( 0, 0, 20, 0, 0, 0, 0, 1, 0);
+
 }
  
 // Read the keyboard
@@ -718,9 +795,9 @@ void keyboard (unsigned char key, int x, int y)
 	  case 'L':
 		  light_state = abs(light_state -1);
 		  break;
-	  case 's':
-	  case 'S':
-		  shape++;
+	  case 'm':
+	  case 'M':
+		  mode++;
 		  break;
 	  case '1':
 		  alpha_stat = alpha_stat + 0.01;
@@ -728,14 +805,83 @@ void keyboard (unsigned char key, int x, int y)
  	  case 27:
          exit(0); // exit program when [ESC] key presseed
          break;
+	  case 'q':
+	  case 'Q':
+		  rotation = rotation - 180;
+		  break;
+	  case 'w':
+	  case 'W':
+		  translation = translation + 0.05;
+		  break;
+	  case 's':
+	  case 'S':
+		  translation = translation - 0.05;
+		  break;
+	  case 'a':
+	  case 'A':
+		  theta += 0.03;
+		  eyeX = objX + 0.000001*cos(phi)*sin(theta);
+		  eyeY = objY + 0.000001*sin(phi)*sin(theta);
+		  eyeZ = objZ + 0.000001*cos(theta);
+		  cout << "LEFT";
+		  break;
+	  case 'd':
+	  case 'D':
+		  theta -= 0.03;
+		  eyeX = objX + 0.000001*cos(phi)*sin(theta);
+		  eyeY = objY + 0.000001*sin(phi)*sin(theta);
+		  eyeZ = objZ + 0.000001*cos(theta);
+		  cout << "RIGHT";
+
+		  break;
       default:
          break;
    }
- 
-if (shape > 8) shape = 0;
+   glutPostRedisplay();
+   if (mode > 8) mode = 0;
  
 }
- 
+void getUniformLoc() {
+	loc_projection = glGetUniformLocation(p[CurrProg], "projection");
+	loc_view = glGetUniformLocation(p[CurrProg], "view");
+	loc_model = glGetUniformLocation(p[CurrProg], "model");
+	loc_normalmat = glGetUniformLocation(p[CurrProg], "normalmat");
+	loc_LightSourcePosition = glGetUniformLocation(p[CurrProg], "LightSourcePosition");
+	loc_LightSourceDiffuse = glGetUniformLocation(p[CurrProg], "LightSourceDiffuse");
+	loc_LightSourceAmbient = glGetUniformLocation(p[CurrProg], "LightSourceAmbient");
+	loc_LightSourceSpecular = glGetUniformLocation(p[CurrProg], "LightSourceSpecular");
+	loc_LightModelDiffuse = glGetUniformLocation(p[CurrProg], "LightModelDiffuse");
+	loc_LightModelAmbient = glGetUniformLocation(p[CurrProg], "LightModelAmbient");
+	loc_LightModelSpecular = glGetUniformLocation(p[CurrProg], "LightModelSpecular");
+	loc_FrontMaterialDiffuse = glGetUniformLocation(p[CurrProg], "FrontMaterialDiffuse");
+	loc_FrontMaterialAmbient = glGetUniformLocation(p[CurrProg], "FrontMaterialAmbient");
+	loc_FrontMaterialSpecular = glGetUniformLocation(p[CurrProg], "FrontMaterialSpecular");
+
+	loc_alpha = glGetUniformLocation(p[CurrProg], "alpha");
+	loc_k = glGetUniformLocation(p[CurrProg], "k");
+}
+void sendUniformVal() {
+	// matrix
+	/*glUniformMatrix4fv(loc_projection, 1, false, m_projection);
+	glUniformMatrix4fv(loc_view, 1, false, m_view);
+	glUniformMatrix4fv(loc_model, 1, false, m_transform);
+	inverseMatrix4x4(m_transform, m_normal);
+	glUniformMatrix4fv(loc_normalmat, 1, true, m_normal);*/
+	// color
+	glUniform4fv(loc_LightSourcePosition, 1, lpos);
+	glUniform4fv(loc_LightSourceDiffuse, 1, LightSourceDiffuse);
+	glUniform4fv(loc_LightSourceAmbient, 1, LightSourceAmbient);
+	glUniform4fv(loc_LightSourceSpecular, 1, LightSourceSpecular);
+	glUniform4fv(loc_LightModelDiffuse, 1, LightModelDiffuse);
+	glUniform4fv(loc_LightModelAmbient, 1, LightModelAmbient);
+	glUniform4fv(loc_LightModelSpecular, 1, LightModelSpecular);
+	glUniform4fv(loc_FrontMaterialDiffuse, 1, FrontMaterialDiffuse);
+	glUniform4fv(loc_FrontMaterialAmbient, 1, FrontMaterialAmbient);
+	glUniform4fv(loc_FrontMaterialSpecular, 1, FrontMaterialSpecular);
+	// parameter
+	glUniform3fv(loc_k, 1, k);
+	glUniform1f(loc_alpha, alpha);
+}
  
 // Main program
 int main(int argc, char** argv)
@@ -761,8 +907,13 @@ int main(int argc, char** argv)
 	window_2 = glutCreateWindow (argv[0]);
 	glutSetWindowTitle("GlutWindow 2");
 	init ();
+	The_City0_2.Load("../mesh-data/The_City0.obj", "../mesh-data/The_City0.mtl");
+	The_City1_2.Load("../mesh-data/The_City1.obj", "../mesh-data/The_City1.mtl");
+	The_City2_2.Load("../mesh-data/The_City2.obj", "../mesh-data/The_City2.mtl");
+	The_City3_2.Load("../mesh-data/The_City3.obj", "../mesh-data/The_City3.mtl");
 	glutDisplayFunc(display_2);
 	glutReshapeFunc(reshape_2);
+	//p = createGLSLProgram("../phong.vert", NULL, "../phong.frag");
 	glutMainLoop();
 	return 0;
 }
@@ -851,6 +1002,132 @@ void motion(int x, int y){
 			break;
 	};
 	glutPostRedisplay();
+}
+void inverseMatrix4x4(const float m[16], float invOut[16])
+{
+
+	float inv[16], det;
+	int i;
+
+	inv[0] = m[5] * m[10] * m[15] -
+		m[5] * m[11] * m[14] -
+		m[9] * m[6] * m[15] +
+		m[9] * m[7] * m[14] +
+		m[13] * m[6] * m[11] -
+		m[13] * m[7] * m[10];
+
+	inv[4] = -m[4] * m[10] * m[15] +
+		m[4] * m[11] * m[14] +
+		m[8] * m[6] * m[15] -
+		m[8] * m[7] * m[14] -
+		m[12] * m[6] * m[11] +
+		m[12] * m[7] * m[10];
+
+	inv[8] = m[4] * m[9] * m[15] -
+		m[4] * m[11] * m[13] -
+		m[8] * m[5] * m[15] +
+		m[8] * m[7] * m[13] +
+		m[12] * m[5] * m[11] -
+		m[12] * m[7] * m[9];
+
+	inv[12] = -m[4] * m[9] * m[14] +
+		m[4] * m[10] * m[13] +
+		m[8] * m[5] * m[14] -
+		m[8] * m[6] * m[13] -
+		m[12] * m[5] * m[10] +
+		m[12] * m[6] * m[9];
+
+	inv[1] = -m[1] * m[10] * m[15] +
+		m[1] * m[11] * m[14] +
+		m[9] * m[2] * m[15] -
+		m[9] * m[3] * m[14] -
+		m[13] * m[2] * m[11] +
+		m[13] * m[3] * m[10];
+
+	inv[5] = m[0] * m[10] * m[15] -
+		m[0] * m[11] * m[14] -
+		m[8] * m[2] * m[15] +
+		m[8] * m[3] * m[14] +
+		m[12] * m[2] * m[11] -
+		m[12] * m[3] * m[10];
+
+	inv[9] = -m[0] * m[9] * m[15] +
+		m[0] * m[11] * m[13] +
+		m[8] * m[1] * m[15] -
+		m[8] * m[3] * m[13] -
+		m[12] * m[1] * m[11] +
+		m[12] * m[3] * m[9];
+
+	inv[13] = m[0] * m[9] * m[14] -
+		m[0] * m[10] * m[13] -
+		m[8] * m[1] * m[14] +
+		m[8] * m[2] * m[13] +
+		m[12] * m[1] * m[10] -
+		m[12] * m[2] * m[9];
+
+	inv[2] = m[1] * m[6] * m[15] -
+		m[1] * m[7] * m[14] -
+		m[5] * m[2] * m[15] +
+		m[5] * m[3] * m[14] +
+		m[13] * m[2] * m[7] -
+		m[13] * m[3] * m[6];
+
+	inv[6] = -m[0] * m[6] * m[15] +
+		m[0] * m[7] * m[14] +
+		m[4] * m[2] * m[15] -
+		m[4] * m[3] * m[14] -
+		m[12] * m[2] * m[7] +
+		m[12] * m[3] * m[6];
+
+	inv[10] = m[0] * m[5] * m[15] -
+		m[0] * m[7] * m[13] -
+		m[4] * m[1] * m[15] +
+		m[4] * m[3] * m[13] +
+		m[12] * m[1] * m[7] -
+		m[12] * m[3] * m[5];
+
+	inv[14] = -m[0] * m[5] * m[14] +
+		m[0] * m[6] * m[13] +
+		m[4] * m[1] * m[14] -
+		m[4] * m[2] * m[13] -
+		m[12] * m[1] * m[6] +
+		m[12] * m[2] * m[5];
+
+	inv[3] = -m[1] * m[6] * m[11] +
+		m[1] * m[7] * m[10] +
+		m[5] * m[2] * m[11] -
+		m[5] * m[3] * m[10] -
+		m[9] * m[2] * m[7] +
+		m[9] * m[3] * m[6];
+
+	inv[7] = m[0] * m[6] * m[11] -
+		m[0] * m[7] * m[10] -
+		m[4] * m[2] * m[11] +
+		m[4] * m[3] * m[10] +
+		m[8] * m[2] * m[7] -
+		m[8] * m[3] * m[6];
+
+	inv[11] = -m[0] * m[5] * m[11] +
+		m[0] * m[7] * m[9] +
+		m[4] * m[1] * m[11] -
+		m[4] * m[3] * m[9] -
+		m[8] * m[1] * m[7] +
+		m[8] * m[3] * m[5];
+
+	inv[15] = m[0] * m[5] * m[10] -
+		m[0] * m[6] * m[9] -
+		m[4] * m[1] * m[10] +
+		m[4] * m[2] * m[9] +
+		m[8] * m[1] * m[6] -
+		m[8] * m[2] * m[5];
+
+	det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
+
+	det = 1.0 / det;
+
+	for (i = 0; i < 16; i++)
+		invOut[i] = inv[i] * det;
+
 }
 void draw_cube()
 {
