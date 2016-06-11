@@ -721,8 +721,8 @@ void display_2(void)
 		else{}
 		*/
 		glLoadIdentity();
-		gluLookAt(0,10,0, 0,0,0, 0,0,-1);
-		//gluLookAt(eyeX, eyeY, eyeZ, objX, objY, objZ, 0, 1, 0);
+		//gluLookAt(0,10,0, 0,0,0, 0,0,-1);
+		gluLookAt(eyeX, eyeY, eyeZ, objX, objY, objZ, 0, 1, 0);
 		//glTranslatef(translation*sin(theta), 0.0, 9.5 + translation*cos(theta));
 		//glRotatef(90, 0, 1, 0);
 		glColorMaterial(GL_FRONT, GL_AMBIENT);
