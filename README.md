@@ -1,4 +1,4 @@
-# Graphics_Final
+###CSE471
 
-### 3d Spot the Difference
+# 3d Spot the Difference
 This is for a final project in Graphics class.
